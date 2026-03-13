@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Live Leaderboard 🏆 Test This!</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--card:#1a1a2e;--border:#2a2a4a;--accent:#00ff88;--accent2:#ff3366;--accent3:#ffcc00;--accent4:#00aaff;--text:#e8e8ff;--muted:#6666aa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,255,136,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,136,0.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.container{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:30px 20px}
+header{text-align:center;padding:36px 0 32px}
+.page-title{font-family:'Unbounded',sans-serif;font-size:clamp(28px,6vw,54px);font-weight:900;background:linear-gradient(135deg,var(--accent3) 0%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.page-sub{color:var(--muted);font-size:11px;letter-spacing:4px;text-transform:uppercase;margin-top:10px}
+.live-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,51,102,0.15);border:1px solid var(--accent2);color:var(--accent2);padding:5px 16px;border-radius:20px;font-size:11px;margin-top:14px;animation:pulse 2s infinite}
+.live-dot{width:8px;height:8px;background:var(--accent2);border-radius:50%;animation:blink 1s infinite}
+.refresh-info{font-size:10px;color:var(--muted);letter-spacing:1px;margin-top:10px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,51,102,0.4)}50%{box-shadow:0 0 0 8px rgba(255,51,102,0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes entryPop{from{transform:scale(0.9);opacity:0}to{transform:scale(1);opacity:1}}
+.stats-row{display:flex;gap:12px;margin-bottom:28px;flex-wrap:wrap}
+.stat-pill{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 20px;text-align:center;flex:1;min-width:100px}
+.stat-val{font-family:'Unbounded',sans-serif;font-size:28px;font-weight:700;color:var(--accent);display:block}
+.stat-lbl{color:var(--muted);font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.lb-card{background:var(--card);border:1px solid var(--border);border-radius:20px;overflow:hidden;position:relative;margin-bottom:20px}
+.lb-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--accent3),var(--accent2),var(--accent4))}
+.lb-card-header{padding:22px 28px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.lb-card-title{font-family:'Unbounded',sans-serif;font-size:14px;font-weight:700;color:var(--accent3);letter-spacing:2px;text-transform:uppercase}
+.lb-count{font-size:11px;color:var(--muted);letter-spacing:1px}
+.lb-list{padding:16px 20px}
+.lb-entry{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;margin-bottom:10px;background:rgba(255,255,255,0.03);border:1px solid transparent;animation:entryPop 0.4s ease both}
+.lb-entry:last-child{margin-bottom:0}
+.lb-entry.top1{background:linear-gradient(135deg,rgba(255,204,0,0.13),rgba(255,204,0,0.04));border-color:rgba(255,204,0,0.35);box-shadow:0 0 24px rgba(255,204,0,0.07)}
+.lb-entry.top2{background:rgba(170,170,170,0.06);border-color:rgba(170,170,170,0.2)}
+.lb-entry.top3{background:rgba(205,127,50,0.06);border-color:rgba(205,127,50,0.2)}
+.rank-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:'Unbounded',sans-serif;font-size:22px;font-weight:900}
+.rank-wrap.r1{background:rgba(255,204,0,0.15);color:var(--accent3)}
+.rank-wrap.r2{background:rgba(170,170,170,0.12);color:#aaaaaa}
+.rank-wrap.r3{background:rgba(205,127,50,0.12);color:#cd7f32}
+.rank-wrap.rn{background:rgba(255,255,255,0.04);color:var(--muted);font-size:14px}
+.lb-info{flex:1;min-width:0}
+.lb-name{font-family:'Unbounded',sans-serif;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-meta{font-size:10px;color:var(--muted);margin-top:4px;letter-spacing:1px}
+.score-wrap{text-align:right;flex-shrink:0}
+.lb-score{font-family:'Unbounded',sans-serif;font-size:20px;font-weight:700;color:var(--accent)}
+.lb-streak{font-size:10px;color:var(--accent2);margin-top:3px}
+.lb-empty{text-align:center;padding:56px 20px;color:var(--muted);line-height:2.2}
+.lb-empty-icon{font-size:44px;display:block;margin-bottom:14px}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.play-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent4));color:var(--bg);border:none;border-radius:12px;padding:14px 32px;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s}
+.play-btn:hover{transform:scale(1.04);box-shadow:0 0 24px rgba(0,255,136,0.35)}
+.reset-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:12px;padding:14px 24px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all 0.2s}
+.reset-btn:hover{border-color:var(--accent2);color:var(--accent2)}
+.qr-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;margin-top:24px}
+.qr-section p{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:12px}
+.qr-url{font-size:12px;color:var(--accent);margin-top:6px;word-break:break-all;letter-spacing:1px}
+.error-note{background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.25);border-radius:10px;padding:14px 18px;font-size:12px;color:#ff8899;margin-bottom:20px;display:none;line-height:1.7}
+.error-note.show{display:block}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="page-title">🏆 LIVE<br>LEADERBOARD</div>
+    <div class="page-sub">Test This! · Payment Testing Quiz</div>
+    <div class="live-badge"><div class="live-dot"></div>LIVE · AUTO-REFRESHES EVERY 15s</div>
+    <div class="refresh-info" id="lastRefresh">Fetching scores...</div>
+  </header>
+
+  <div class="error-note" id="errorNote"></div>
+
+  <div class="stats-row">
+    <div class="stat-pill"><span class="stat-val" id="totalPlayers">—</span><span class="stat-lbl">Players</span></div>
+    <div class="stat-pill"><span class="stat-val" id="topScore">—</span><span class="stat-lbl">Top Score</span></div>
+    <div class="stat-pill"><span class="stat-val" id="avgScore">—</span><span class="stat-lbl">Avg Score</span></div>
+  </div>
+
+  <div class="lb-card">
+    <div class="lb-card-header">
+      <div class="lb-card-title">🏆 Rankings</div>
+      <div class="lb-count" id="lbCount"></div>
+    </div>
+    <div class="lb-list" id="lbList">
+      <div class="lb-empty"><span class="lb-empty-icon">⏳</span>Loading scores from GitHub...</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a class="play-btn" href="index.html">🧪 Play the Quiz</a>
+    <button class="reset-btn" onclick="clearBoard()">🗑 Reset Leaderboard</button>
+  </div>
+
+  <div class="qr-section">
+    <div id="qrCanvas"></div>
+    <p>📱 Scan to play on your phone</p>
+    <div class="qr-url">https://shubhaje.github.io/payment-gathering-quiz/</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ── CONFIG — must match index.html ─────────────────────────────────────────
+var GITHUB_TOKEN = 'PASTE_YOUR_PAT_HERE';   // ← Same PAT as index.html
+var GITHUB_OWNER = 'shubhaje';
+var GITHUB_REPO  = 'payment-gathering-quiz';
+var SCORES_FILE  = 'scores.json';
+var QUIZ_URL     = 'https://shubhaje.github.io/payment-gathering-quiz/';
+var API_BASE     = 'https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/contents/'+SCORES_FILE;
+// ───────────────────────────────────────────────────────────────────────────
+
+function ghHeaders(){
+  return {'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json'};
+}
+
+function fetchAndRender(){
+  fetch(API_BASE+'?t='+Date.now(),{headers:ghHeaders()})
+    .then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    })
+    .then(function(d){
+      var scores=[];
+      try{scores=JSON.parse(atob(d.content.replace(/\n/g,'')));}catch(e){}
+      document.getElementById('errorNote').className='error-note';
+      render(scores);
+      document.getElementById('lastRefresh').textContent='Last updated: '+new Date().toLocaleTimeString();
+    })
+    .catch(function(e){
+      var note=document.getElementById('errorNote');
+      note.className='error-note show';
+      note.textContent='Could not load scores. Check your PAT is set correctly in both HTML files. Error: '+e.message;
+      document.getElementById('lastRefresh').textContent='Failed to refresh — retrying...';
+    });
+}
+
+function render(scores){
+  var n=scores.length;
+  document.getElementById('totalPlayers').textContent=n||'0';
+  if(n){
+    document.getElementById('topScore').textContent=scores[0].score;
+    var total=0;for(var i=0;i<n;i++)total+=scores[i].score;
+    document.getElementById('avgScore').textContent=Math.round(total/n);
+    document.getElementById('lbCount').textContent=n+' player'+(n!==1?'s':'');
+  } else {
+    document.getElementById('topScore').textContent='—';
+    document.getElementById('avgScore').textContent='—';
+    document.getElementById('lbCount').textContent='';
+  }
+
+  var list=document.getElementById('lbList');
+  if(!n){
+    list.innerHTML='<div class="lb-empty"><span class="lb-empty-icon">🧪</span>No scores yet!<br>Be the first to complete the quiz.</div>';
+    return;
+  }
+
+  var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
+  var entryClasses=['top1','top2','top3'];
+  var rankClasses=['r1','r2','r3'];
+  var html='';
+
+  for(var i=0;i<scores.length;i++){
+    var e=scores[i];
+    var ec=i<3?' '+entryClasses[i]:'';
+    var rc=i<3?rankClasses[i]:'rn';
+    var rd=i<3?medals[i]:('#'+(i+1));
+    var delay=(i*0.05).toFixed(2);
+    var sh=e.streak>1?'<div class="lb-streak">'+e.streak+'\uD83D\uDD25 best streak</div>':'';
+    html+='<div class="lb-entry'+ec+'" style="animation-delay:'+delay+'s">';
+    html+='<div class="rank-wrap '+rc+'">'+rd+'</div>';
+    html+='<div class="lb-info"><div class="lb-name">'+esc(e.name)+'</div><div class="lb-meta">RANK #'+(i+1)+'</div></div>';
+    html+='<div class="score-wrap"><div class="lb-score">'+e.score+' pts</div>'+sh+'</div>';
+    html+='</div>';
+  }
+  list.innerHTML=html;
+}
+
+function clearBoard(){
+  if(!confirm('Reset the leaderboard? All scores will be permanently deleted from GitHub.'))return;
+  // Read SHA first, then overwrite with empty array
+  fetch(API_BASE+'?t='+Date.now(),{headers:ghHeaders()})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      var body=JSON.stringify({
+        message:'Reset leaderboard',
+        content:btoa('[]'),
+        sha:d.sha
+      });
+      var writeHeaders=Object.assign({},ghHeaders(),{'Content-Type':'application/json'});
+      return fetch(API_BASE,{method:'PUT',headers:writeHeaders,body:body});
+    })
+    .then(function(){fetchAndRender();})
+    .catch(function(e){alert('Reset failed: '+e.message);});
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// QR code
+try{
+  new QRCode(document.getElementById('qrCanvas'),{
+    text:QUIZ_URL,width:180,height:180,
+    colorDark:'#00ff88',colorLight:'#0a0a0f',
+    correctLevel:QRCode.CorrectLevel.M
+  });
+}catch(e){}
+
+// Initial load + auto-refresh every 15 seconds
+fetchAndRender();
+setInterval(fetchAndRender,15000);
+</script>
+</body>
+</html>
