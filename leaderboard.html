@@ -52,13 +52,9 @@ header{text-align:center;padding:36px 0 32px}
 .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
 .play-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),var(--accent4));color:var(--bg);border:none;border-radius:12px;padding:14px 32px;font-family:'Unbounded',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s}
 .play-btn:hover{transform:scale(1.04);box-shadow:0 0 24px rgba(0,255,136,0.35)}
-.reset-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:12px;padding:14px 24px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all 0.2s}
-.reset-btn:hover{border-color:var(--accent2);color:var(--accent2)}
 .qr-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;text-align:center;margin-top:24px}
 .qr-section p{font-size:11px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-top:12px}
 .qr-url{font-size:12px;color:var(--accent);margin-top:6px;word-break:break-all;letter-spacing:1px}
-.error-note{background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.25);border-radius:10px;padding:14px 18px;font-size:12px;color:#ff8899;margin-bottom:20px;display:none;line-height:1.7}
-.error-note.show{display:block}
 </style>
 </head>
 <body>
@@ -69,8 +65,6 @@ header{text-align:center;padding:36px 0 32px}
     <div class="live-badge"><div class="live-dot"></div>LIVE · AUTO-REFRESHES EVERY 15s</div>
     <div class="refresh-info" id="lastRefresh">Fetching scores...</div>
   </header>
-
-  <div class="error-note" id="errorNote"></div>
 
   <div class="stats-row">
     <div class="stat-pill"><span class="stat-val" id="totalPlayers">—</span><span class="stat-lbl">Players</span></div>
@@ -84,13 +78,12 @@ header{text-align:center;padding:36px 0 32px}
       <div class="lb-count" id="lbCount"></div>
     </div>
     <div class="lb-list" id="lbList">
-      <div class="lb-empty"><span class="lb-empty-icon">⏳</span>Loading scores from GitHub...</div>
+      <div class="lb-empty"><span class="lb-empty-icon">⏳</span>Loading scores...</div>
     </div>
   </div>
 
   <div class="actions">
     <a class="play-btn" href="index.html">🧪 Play the Quiz</a>
-    <button class="reset-btn" onclick="clearBoard()">🗑 Reset Leaderboard</button>
   </div>
 
   <div class="qr-section">
@@ -102,55 +95,40 @@ header{text-align:center;padding:36px 0 32px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-// ── CONFIG — must match index.html ─────────────────────────────────────────
-var GITHUB_TOKEN = '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';   // ← Same PAT as index.html
-var GITHUB_OWNER = 'shubhaje';
-var GITHUB_REPO  = 'payment-gathering-quiz';
-var SCORES_FILE  = 'scores.json';
-var QUIZ_URL     = 'https://shubhaje.github.io/payment-gathering-quiz/';
-var API_BASE     = 'https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/contents/'+SCORES_FILE;
-// ───────────────────────────────────────────────────────────────────────────
-
-function ghHeaders(){
-  return {'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json'};
-}
+var RAW_URL = 'https://raw.githubusercontent.com/shubhaje/payment-gathering-quiz/main/scores.json';
+var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 
 function fetchAndRender(){
-  fetch(API_BASE+'?t='+Date.now(),{headers:ghHeaders()})
+  // Read using raw.githubusercontent.com — no token needed, always works for public repos
+  fetch(RAW_URL + '?t=' + Date.now())
     .then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.json();
     })
-    .then(function(d){
-      var scores=[];
-      try{scores=JSON.parse(atob(d.content.replace(/\n/g,'')));}catch(e){}
-      document.getElementById('errorNote').className='error-note';
+    .then(function(scores){
       render(scores);
-      document.getElementById('lastRefresh').textContent='Last updated: '+new Date().toLocaleTimeString();
+      document.getElementById('lastRefresh').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
     })
     .catch(function(e){
-      var note=document.getElementById('errorNote');
-      note.className='error-note show';
-      note.textContent='Could not load scores. Check your PAT is set correctly in both HTML files. Error: '+e.message;
-      document.getElementById('lastRefresh').textContent='Failed to refresh — retrying...';
+      document.getElementById('lastRefresh').textContent = 'Error loading scores: ' + e.message;
     });
 }
 
 function render(scores){
-  var n=scores.length;
-  document.getElementById('totalPlayers').textContent=n||'0';
+  var n = scores.length;
+  document.getElementById('totalPlayers').textContent = n || '0';
   if(n){
-    document.getElementById('topScore').textContent=scores[0].score;
-    var total=0;for(var i=0;i<n;i++)total+=scores[i].score;
-    document.getElementById('avgScore').textContent=Math.round(total/n);
-    document.getElementById('lbCount').textContent=n+' player'+(n!==1?'s':'');
+    document.getElementById('topScore').textContent = scores[0].score;
+    var total=0; for(var i=0;i<n;i++) total+=scores[i].score;
+    document.getElementById('avgScore').textContent = Math.round(total/n);
+    document.getElementById('lbCount').textContent = n+' player'+(n!==1?'s':'');
   } else {
-    document.getElementById('topScore').textContent='—';
-    document.getElementById('avgScore').textContent='—';
-    document.getElementById('lbCount').textContent='';
+    document.getElementById('topScore').textContent = '—';
+    document.getElementById('avgScore').textContent = '—';
+    document.getElementById('lbCount').textContent = '';
   }
 
-  var list=document.getElementById('lbList');
+  var list = document.getElementById('lbList');
   if(!n){
     list.innerHTML='<div class="lb-empty"><span class="lb-empty-icon">🧪</span>No scores yet!<br>Be the first to complete the quiz.</div>';
     return;
@@ -160,7 +138,6 @@ function render(scores){
   var entryClasses=['top1','top2','top3'];
   var rankClasses=['r1','r2','r3'];
   var html='';
-
   for(var i=0;i<scores.length;i++){
     var e=scores[i];
     var ec=i<3?' '+entryClasses[i]:'';
@@ -177,27 +154,8 @@ function render(scores){
   list.innerHTML=html;
 }
 
-function clearBoard(){
-  if(!confirm('Reset the leaderboard? All scores will be permanently deleted from GitHub.'))return;
-  // Read SHA first, then overwrite with empty array
-  fetch(API_BASE+'?t='+Date.now(),{headers:ghHeaders()})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      var body=JSON.stringify({
-        message:'Reset leaderboard',
-        content:btoa('[]'),
-        sha:d.sha
-      });
-      var writeHeaders=Object.assign({},ghHeaders(),{'Content-Type':'application/json'});
-      return fetch(API_BASE,{method:'PUT',headers:writeHeaders,body:body});
-    })
-    .then(function(){fetchAndRender();})
-    .catch(function(e){alert('Reset failed: '+e.message);});
-}
-
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
-// QR code
 try{
   new QRCode(document.getElementById('qrCanvas'),{
     text:QUIZ_URL,width:180,height:180,
@@ -206,9 +164,8 @@ try{
   });
 }catch(e){}
 
-// Initial load + auto-refresh every 15 seconds
 fetchAndRender();
-setInterval(fetchAndRender,15000);
+setInterval(fetchAndRender, 15000);
 </script>
 </body>
 </html>
