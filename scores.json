@@ -3,5 +3,10 @@
     "name": "s",
     "score": 900,
     "streak": 5
+  },
+  {
+    "name": "A",
+    "score": 100,
+    "streak": 1
   }
 ]
