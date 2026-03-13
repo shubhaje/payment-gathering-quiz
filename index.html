@@ -61,7 +61,10 @@ header{text-align:center;padding:36px 0 24px}
 .submit-btn{background:var(--accent);color:var(--bg);border:none;border-radius:8px;padding:10px 20px;font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.2s;white-space:nowrap}
 .submit-btn:hover{transform:scale(1.05);box-shadow:var(--glow)}
 .submit-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none}
-.saving-note{font-size:11px;color:var(--accent3);margin-top:8px;min-height:18px;letter-spacing:1px}
+.save-status{font-size:11px;margin-top:8px;min-height:18px;letter-spacing:1px}
+.save-status.saving{color:var(--accent3)}
+.save-status.saved{color:var(--accent)}
+.save-status.error{color:var(--accent2)}
 .feedback-box{margin-top:14px;padding:14px 16px;border-radius:10px;font-size:13px;line-height:1.6;display:none}
 .feedback-box.show{display:block;animation:fadeUp 0.3s ease}
 .feedback-box.correct-fb{background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:var(--accent)}
@@ -140,12 +143,12 @@ header{text-align:center;padding:36px 0 24px}
         <div class="scenario-box" id="scenarioBox" style="display:none"></div>
         <div class="options-grid" id="optionsGrid"></div>
         <div class="player-section">
-          <label>Enter your name to claim your score 🧪</label>
+          <label>Enter your name to save your score 🧪</label>
           <div class="input-row">
             <input type="text" class="name-input" id="playerName" placeholder="Your name..." maxlength="20">
             <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">SUBMIT</button>
           </div>
-          <div class="saving-note" id="savingNote"></div>
+          <div class="save-status" id="saveStatus"></div>
         </div>
         <div class="feedback-box" id="feedbackBox"></div>
         <button class="next-btn" id="nextBtn" onclick="nextQuestion()">NEXT QUESTION &#x2192;</button>
@@ -154,17 +157,17 @@ header{text-align:center;padding:36px 0 24px}
         <div class="go-title">YOU TESTED IT!</div>
         <div style="color:var(--muted);font-size:13px;margin-bottom:20px">All 6 done. You think like a tester! 🧪</div>
         <div id="finalScoreDisplay" style="font-family:'Unbounded',sans-serif;font-size:32px;color:var(--accent)"></div>
-        <button class="restart-btn" onclick="restartGame()">🧪 PLAY AGAIN &mdash; 6 New Questions!</button><br>
+        <button class="restart-btn" onclick="restartGame()">🧪 PLAY AGAIN</button><br>
         <a class="lb-btn-go" href="leaderboard.html">🏆 See Full Leaderboard</a>
       </div>
     </div>
     <div>
       <div class="sidebar-lb">
         <div class="lb-header">🏆 LEADERBOARD</div>
-        <div class="lb-sub">🌐 LIVE &middot; SHARED ACROSS ALL PLAYERS</div>
-        <div id="leaderboardList"><div class="lb-empty">Loading scores...</div></div>
+        <div class="lb-sub">🌐 LIVE · SHARED ACROSS ALL PLAYERS</div>
+        <div id="leaderboardList"><div class="lb-empty">Loading...</div></div>
         <hr class="lb-divider">
-        <div style="font-size:10px;color:var(--muted);text-align:center;letter-spacing:1px">Scores stored in GitHub</div>
+        <div style="font-size:10px;color:var(--muted);text-align:center;letter-spacing:1px" id="lbStatus">Scores stored in GitHub</div>
       </div>
       <div class="qr-box">
         <div id="qrCanvas"></div>
@@ -176,95 +179,136 @@ header{text-align:center;padding:36px 0 24px}
 <div class="celebration" id="celebration" style="display:none"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
-var GITHUB_TOKEN = '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';   // ← Replace with your PAT
+// ── CONFIG — replace GITHUB_TOKEN with your PAT ────────────────────────────
+var GITHUB_TOKEN = 'REPLACE_WITH_YOUR_PAT';
 var GITHUB_OWNER = 'shubhaje';
 var GITHUB_REPO  = 'payment-gathering-quiz';
 var SCORES_FILE  = 'scores.json';
 var QUIZ_URL     = 'https://shubhaje.github.io/payment-gathering-quiz/';
-var API_BASE     = 'https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/contents/'+SCORES_FILE;
+// READ  uses raw.githubusercontent.com — no token needed
+var RAW_URL  = 'https://raw.githubusercontent.com/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/main/' + SCORES_FILE;
+// WRITE uses GitHub Contents API — needs PAT
+var API_URL  = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + SCORES_FILE;
 // ───────────────────────────────────────────────────────────────────────────
 
 var ALL_QUESTIONS = [
-  {phase:"SMOKE TEST",pts:100,q:"What is a Smoke Test?",sc:null,opts:["A full test of every feature and edge case in the application","A quick check of the most critical features to confirm a build is stable enough for deeper testing","A test that checks only the visual design of the application","A security scan to find vulnerabilities before release"],ans:1,why:"A smoke test is fast and shallow — it asks: is this build alive? If core features like login or payment fail, there is no point running anything deeper. Smoke first, always."},
-  {phase:"REGRESSION TEST",pts:100,q:"What is a Regression Test?",sc:null,opts:["Testing only the new feature that was just added","Re-running tests on existing features to make sure a new change did not accidentally break something that was already working","Testing the application from scratch as if it has never been tested before","A test that only runs at the very end of a project before go-live"],ans:1,why:"Regression testing protects what already works. Every code change — bug fix, new feature, config update — can accidentally break existing functionality. Regression tests are the safety net."},
-  {phase:"SANITY TEST",pts:100,q:"What is a Sanity Test?",sc:null,opts:["A broad check across all features of the application","A focused, narrow check on one specific area or fix to confirm it works before testing anything else","A test that checks the application makes logical sense to end users","A full end-to-end test run after every deployment"],ans:1,why:"A sanity test is targeted. When a developer says 'I fixed the payment timeout bug', you run a sanity test: go straight to that specific scenario and confirm it now works. Narrow and fast."},
-  {phase:"INTEGRATION TEST",pts:100,q:"What is an Integration Test?",sc:null,opts:["Testing each module of the application completely in isolation","Testing how two or more components or systems work together when connected","A test performed by business users to confirm requirements are met","A performance test to check how many users the system can handle"],ans:1,why:"Integration tests check the joins between systems. The payment module might pass all its own tests, and the email service too — but integration testing checks that after a payment, the email actually receives the right data and fires correctly."},
-  {phase:"UAT",pts:100,q:"What is User Acceptance Testing (UAT)?",sc:null,opts:["Automated tests that simulate thousands of real users","Testing done by QA testers pretending to be end users","Testing performed by real business users or clients to confirm the software meets their actual needs before go-live","A final visual check that all screens look correct before launch"],ans:2,why:"UAT is the business sign-off test. QA confirms it works correctly — UAT confirms it works correctly for the people who actually depend on it. Finance teams, ops staff — they validate it meets real-world needs before any go-live."},
-  {phase:"LOAD TEST",pts:100,q:"What is a Load Test?",sc:null,opts:["Testing the application with a single user to check basic functionality","Simulating expected real-world user volumes to check the system performs acceptably under that load","Testing how the system behaves when pushed far beyond its maximum capacity until it breaks","A test that measures how long each page takes to load for one user"],ans:1,why:"Load testing simulates realistic traffic volumes — if your payment platform expects 10,000 transactions per hour, load testing checks it handles exactly that without slowing down or failing."},
-  {phase:"STRESS TEST",pts:100,q:"What is a Stress Test?",sc:null,opts:["Testing the application at normal expected traffic levels","A test to check the visual layout does not break on small screens","Deliberately pushing the system beyond its expected maximum capacity to find its breaking point","Testing only the slowest features to identify performance bottlenecks"],ans:2,why:"Stress testing asks: how does the system fail? It pushes beyond expected load to find the breaking point. Does it crash, reject requests gracefully, or corrupt data? Knowing this lets you plan for real spikes."},
-  {phase:"EXPLORATORY TEST",pts:100,q:"What is Exploratory Testing?",sc:null,opts:["Running a fixed list of pre-written test cases in order","Unscripted, curiosity-driven testing where the tester freely investigates the app using experience and intuition","Automated tests that explore all code paths without human involvement","Testing only the features most likely to have bugs"],ans:1,why:"Exploratory testing is the tester using their brain, not a script. It finds the bugs that nobody thought to write a test case for — the ones real users stumble on by doing unexpected things."},
-  {phase:"PERFORMANCE TEST",pts:150,q:"What is the difference between a Load Test and a Stress Test?",sc:null,opts:["They are identical — just different names for the same type of test","Load test checks performance at expected volumes. Stress test pushes beyond those limits to find the breaking point.","Load test is manual, stress test is always automated","Stress test checks one feature under load, load test checks the whole application"],ans:1,why:"Load test = can you handle your expected traffic? Stress test = what happens when you exceed it? Both are essential — load testing confirms capacity, stress testing shows you how you fail."},
-  {phase:"SECURITY TEST",pts:150,q:"What is Security Testing?",sc:null,opts:["Testing that the application loads quickly enough for all users","Testing that checks the application protects data, enforces authorisation, and resists attacks like injection and unauthorised access","A test that checks only that passwords meet complexity requirements","Testing done by external auditors only"],ans:1,why:"Security testing covers a wide range — can users access data they should not? Can inputs inject malicious code? Are sessions handled safely? For any system handling payments or personal data, security testing is non-negotiable."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"A new payment build has just arrived. The Pay button and card entry have not been tested at all. You have 10 minutes. Which test do you run?",sc:"New payment build — completely untested\nFull regression suite = 3 hours\nTime available = 10 minutes",opts:["Regression test — run all 200 payment test cases","Smoke test — quickly confirm the core payment journey works before going deeper","UAT — hand it to the finance team right away","Exploratory test — click freely around the payment pages"],ans:1,why:"Smoke test! Can a customer actually complete a payment on this build? If the Pay button is broken, running 200 more tests is pointless. Smoke test first to confirm the build is alive, then go deeper."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"A developer says: 'I fixed the bug where Amex cards were incorrectly declined.' What is the FIRST test you run?",sc:null,opts:["Regression test — rerun all payment tests to be safe","Smoke test — do a quick check across the whole payment page","Sanity test — go directly to Amex card payment and confirm it now succeeds","UAT — ask the finance team to verify the Amex fix"],ans:2,why:"Sanity test! A specific fix deserves a targeted check — go straight to Amex payments and confirm the fix works. Then run regression to check nothing else was broken."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"Apple Pay has been added to checkout. Visa, Mastercard, and PayPal all worked before this release. Which test confirms they still work?",sc:"New: Apple Pay added\nVisa, Mastercard, PayPal: unchanged in this release",opts:["Smoke test — confirm the Apple Pay button appears","Regression test — rerun tests on existing payment methods to confirm none were broken by the Apple Pay code","UAT — ask finance to confirm Apple Pay meets business requirements","Integration test — check Apple Pay connects to the gateway correctly"],ans:1,why:"Regression test! Adding a new payment method touches shared gateway code. Even though Visa and Mastercard were not deliberately changed, the shared payment layer may have been affected."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"The payment module and fraud detection system each pass all their own tests. But legitimate Visa payments are being blocked as fraudulent. Which test is needed?",sc:"Payment module: All tests passed\nFraud detection: All tests passed\nResult: Valid Visa payments declined as fraud",opts:["Regression test — something that worked before must have broken","Smoke test — check the core payment journey quickly","Integration test — test how the payment module and fraud detection interact with each other","UAT — let customers try paying and report if blocked"],ans:2,why:"Integration test! Two systems passing their own tests does not mean they work correctly together. The data flowing between the payment module and fraud engine needs to be tested as a combined flow."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"A payment platform expects 50x normal transaction volume during Black Friday. Current tested capacity is unknown. Which test is essential?",sc:"Normal: 10,000 transactions/day\nBlack Friday: 500,000 transactions/day\nTested capacity: unknown",opts:["Smoke test — confirm the payment page and Pay button still work","Regression test — rerun all payment scenarios","Load test — simulate high transaction volumes to find capacity limits before real customers hit them","UAT — ask a panel of customers to make test purchases simultaneously"],ans:2,why:"Load test! You must know how the payment system performs at 500,000 transactions before Black Friday arrives. Performance at 10,000 tells you nothing about 500,000."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"You need to know what happens when the payment platform is pushed far beyond its maximum capacity. Which test reveals this?",sc:"Normal capacity: 50,000 transactions/hour\nTarget: discover exact breaking point",opts:["Load test — simulate normal expected transaction volumes","Regression test — confirm existing payment flows still work","Stress test — push far beyond expected capacity to find exactly where and how the system breaks","Sanity test — confirm the core payment journey still functions"],ans:2,why:"Stress test! Load testing checks normal capacity — stress testing deliberately exceeds it to find the breaking point. Does it crash and lose transactions? Reject new payments gracefully? Know this before a real overload event."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"All payment tests passed. A tester spends 30 minutes freely exploring checkout — trying two discount codes, a virtual card, two tabs open at once. What is this?",sc:null,opts:["Regression testing — rechecking payment test cases informally","Sanity testing — a focused check on specific payment scenarios","Exploratory testing — unscripted investigation using curiosity to find payment bugs no test case imagined","Smoke testing — a quick pass over payment pages without a plan"],ans:2,why:"Exploratory testing! Real customers do unexpected things — two discount codes, back button after payment, session expiry mid-checkout. Exploratory testing simulates real user unpredictability and finds the most impactful bugs."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"A payment page works on desktop but mobile customers report the Pay Now button is cut off on budget Android phones. Which testing was missed?",sc:"Desktop: All tests passed\nMobile: Pay Now button missing on screens under 400px\nAffected: budget Android phones",opts:["Regression testing — the button must have broken in a recent release","Integration testing — payment confirmation not reaching the backend","Cross-device and mobile compatibility testing — not tested across the real range of devices customers use","UAT — the business team should have caught this"],ans:2,why:"Mobile compatibility testing! Customers pay on the devices they own — budget Androids, older iPhones, tablets. A payment flow that hides the Pay button on a small screen is failing real customers at the moment of purchase."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"A tester changes their customer ID in the payment URL and can view another customer's full transaction history. Which test must be added?",sc:"URL: /account/12345/payments\nChanged to: /account/12346/payments\nResult: Another customer's full payment history is visible",opts:["Performance test — the page loads transaction history too slowly","Regression test — authorisation controls must have broken recently","Security test — verify users cannot access payment data belonging to other customers","UAT — customers should confirm their history looks correct"],ans:2,why:"Security test! Accessing another customer's payment data by changing a URL is a critical vulnerability. Security testing must verify every user can only ever see their own transactions."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"A mobile payment app works on WiFi but 3G customers report their payment spins forever with no confirmation — they don't know if they were charged. Which test was missing?",sc:"WiFi: Payment completes in 1 second, confirmation shown\n3G: Times out after 30 seconds — blank screen, no message\nRisk: customer may pay again or raise a dispute",opts:["Regression test — a recent release removed the timeout message","UAT — finance would have flagged the missing confirmation","Network condition testing — the payment flow was never tested on slow or unstable connections","Smoke test — the spinner should have been caught in the initial smoke run"],ans:2,why:"Network condition testing! Real customers use 3G and patchy connections. A payment that silently times out with no message leaves customers unsure if charged — they may pay twice or dispute. Payment flows must handle network failures gracefully."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"Finance and ops need to confirm the new payment reconciliation system matches their settlement requirements before go-live. Which test is this?",sc:"Dev complete: Yes\nQA signed off: Yes\nFinance reviewed reconciliation: No\nOps confirmed settlement files: No",opts:["Regression test — rerun all reconciliation test cases to double-check","Integration test — confirm reconciliation connects to the payment gateway","UAT — real finance and ops users validate the system meets their actual reconciliation needs","Exploratory test — let testers freely investigate the reports"],ans:2,why:"UAT! QA confirms the system works correctly — UAT confirms it works for the people who depend on it. Finance must sign off that totals match, settlement files are accurate, and refund records are correct."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"A payment team deploys up to 20 times per day and needs feedback within 10 minutes of each deployment on whether core payment flows still work. What is the right approach?",sc:"Deployments/day: up to 20\nFull regression suite runtime: 4 hours\nRequired feedback: under 10 minutes",opts:["Run the full 4-hour regression suite after every deployment","Run no automated tests — developers verify their own changes manually","Run a fast automated smoke and sanity suite on every deployment, with full regression running nightly","Run UAT after every deployment — finance must approve every payment change"],ans:2,why:"Tiered automation! A fast smoke and sanity suite confirms core payment journeys in minutes after every deployment. Full regression runs nightly. Fast feedback without blocking the team for 4 hours — and no silent payment failures reach customers."}
+  {phase:"SMOKE TEST",pts:100,q:"What is a Smoke Test?",sc:null,opts:["A full test of every feature and edge case","A quick check of the most critical features to confirm a build is stable enough for deeper testing","A test that checks only the visual design","A security scan to find vulnerabilities"],ans:1,why:"A smoke test is fast and shallow — is this build alive? If core features fail, there is no point running anything deeper."},
+  {phase:"REGRESSION TEST",pts:100,q:"What is a Regression Test?",sc:null,opts:["Testing only the new feature just added","Re-running tests on existing features to make sure a new change did not break something already working","Testing the application from scratch","A test that only runs before go-live"],ans:1,why:"Regression testing protects what already works. Every code change can accidentally break existing functionality."},
+  {phase:"SANITY TEST",pts:100,q:"What is a Sanity Test?",sc:null,opts:["A broad check across all features","A focused, narrow check on one specific area or fix to confirm it works","A test that checks the app makes logical sense to users","A full end-to-end test run after every deployment"],ans:1,why:"A sanity test is targeted — go straight to the specific scenario and confirm it now works. Narrow and fast."},
+  {phase:"INTEGRATION TEST",pts:100,q:"What is an Integration Test?",sc:null,opts:["Testing each module completely in isolation","Testing how two or more components or systems work together when connected","A test performed by business users","A performance test for user capacity"],ans:1,why:"Integration tests check the joins between systems. Two modules passing their own tests doesn't mean they work correctly together."},
+  {phase:"UAT",pts:100,q:"What is User Acceptance Testing (UAT)?",sc:null,opts:["Automated tests simulating thousands of real users","Testing done by QA testers pretending to be end users","Testing performed by real business users to confirm the software meets actual needs before go-live","A final visual check before launch"],ans:2,why:"UAT is the business sign-off test. Real users validate it meets real-world needs before any go-live."},
+  {phase:"LOAD TEST",pts:100,q:"What is a Load Test?",sc:null,opts:["Testing with a single user to check basic functionality","Simulating expected real-world user volumes to check the system performs acceptably","Testing how the system behaves beyond maximum capacity until it breaks","Measuring how long each page takes to load for one user"],ans:1,why:"Load testing simulates realistic traffic volumes — checks performance at expected load without slowing down or failing."},
+  {phase:"STRESS TEST",pts:100,q:"What is a Stress Test?",sc:null,opts:["Testing at normal expected traffic levels","A test to check visual layout on small screens","Deliberately pushing the system beyond expected maximum capacity to find its breaking point","Testing only the slowest features"],ans:2,why:"Stress testing asks: how does the system fail? It finds the breaking point — does it crash, or fail gracefully?"},
+  {phase:"EXPLORATORY TEST",pts:100,q:"What is Exploratory Testing?",sc:null,opts:["Running a fixed list of pre-written test cases","Unscripted, curiosity-driven testing where the tester freely investigates using experience and intuition","Automated tests that explore all code paths","Testing only features most likely to have bugs"],ans:1,why:"Exploratory testing finds the bugs nobody thought to write a test case for — the ones real users stumble on."},
+  {phase:"PERFORMANCE TEST",pts:150,q:"What is the difference between a Load Test and a Stress Test?",sc:null,opts:["They are identical — just different names","Load test checks performance at expected volumes. Stress test pushes beyond limits to find the breaking point.","Load test is manual, stress test is automated","Stress test checks one feature, load test checks the whole app"],ans:1,why:"Load test = can you handle expected traffic? Stress test = what happens when you exceed it?"},
+  {phase:"SECURITY TEST",pts:150,q:"What is Security Testing?",sc:null,opts:["Testing the application loads quickly","Testing that checks the app protects data, enforces authorisation, and resists attacks like injection and unauthorised access","A test checking only password complexity","Testing done by external auditors only"],ans:1,why:"Security testing covers data protection, authorisation, and resistance to attacks. Non-negotiable for payment systems."},
+  {phase:"WHICH TEST? 💳",pts:100,q:"A new payment build has arrived. The Pay button has not been tested. You have 10 minutes. Which test do you run?",sc:"New payment build — untested\nFull regression suite = 3 hours\nTime available = 10 minutes",opts:["Regression test — run all 200 payment test cases","Smoke test — confirm the core payment journey works before going deeper","UAT — hand it to the finance team","Exploratory test — click freely around"],ans:1,why:"Smoke test! If the Pay button is broken, running 200 more tests is pointless. Smoke first."},
+  {phase:"WHICH TEST? 💳",pts:100,q:"A developer says: 'I fixed the bug where Amex cards were declined.' What is the FIRST test you run?",sc:null,opts:["Regression test — rerun all payment tests","Smoke test — quick check across the whole payment page","Sanity test — go directly to Amex payment and confirm it now succeeds","UAT — ask finance to verify"],ans:2,why:"Sanity test! Go straight to Amex payments and confirm the specific fix works. Then run regression."},
+  {phase:"WHICH TEST? 💳",pts:100,q:"Apple Pay has been added. Visa, Mastercard, and PayPal worked before. Which test confirms they still work?",sc:"New: Apple Pay added\nVisa, Mastercard, PayPal: unchanged",opts:["Smoke test — confirm Apple Pay button appears","Regression test — rerun tests on existing payment methods to confirm none were broken","UAT — ask finance to confirm Apple Pay meets requirements","Integration test — check Apple Pay connects to gateway"],ans:1,why:"Regression test! Adding a new payment method touches shared gateway code — existing methods may be affected."},
+  {phase:"WHICH TEST? 💳",pts:100,q:"The payment module and fraud detection each pass all their own tests. But valid Visa payments are being blocked as fraudulent. Which test is needed?",sc:"Payment module: All passed\nFraud detection: All passed\nResult: Valid Visa payments declined",opts:["Regression test","Smoke test","Integration test — test how the payment module and fraud detection interact and pass data","UAT"],ans:2,why:"Integration test! Two systems passing their own tests doesn't mean they work correctly together."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"A payment platform expects 50x normal volume during Black Friday. Tested capacity is unknown. Which test is essential?",sc:"Normal: 10,000 transactions/day\nBlack Friday: 500,000/day\nTested capacity: unknown",opts:["Smoke test","Regression test","Load test — simulate high volumes to find capacity limits before real customers hit them","UAT"],ans:2,why:"Load test! Find the slowdowns and failure points before Black Friday, not during it."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"You need to know what happens when the payment platform is pushed far beyond maximum capacity. Which test?",sc:"Normal: 50,000 transactions/hour\nTarget: find exact breaking point",opts:["Load test — simulate normal expected volumes","Regression test","Stress test — push far beyond capacity to find exactly where and how it breaks","Sanity test"],ans:2,why:"Stress test! Does it crash and lose transactions? Reject gracefully? Know this before a real overload."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"All tests passed. A tester spends 30 minutes freely exploring checkout — two discount codes, virtual card, two tabs. What is this?",sc:null,opts:["Regression testing","Sanity testing","Exploratory testing — unscripted investigation to find bugs no test case imagined","Smoke testing"],ans:2,why:"Exploratory testing! Real customers do unexpected things. This finds the most impactful bugs."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"Payment works on desktop but the Pay Now button is cut off on budget Android phones. Which testing was missed?",sc:"Desktop: All passed\nMobile: Pay Now missing on screens under 400px",opts:["Regression testing","Integration testing","Cross-device and mobile compatibility testing — not tested across the real range of user devices","UAT"],ans:2,why:"Mobile compatibility testing! Customers pay on the devices they own — budget Androids, older iPhones."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"A tester changes their customer ID in the payment URL and views another customer's transaction history. Which test must be added?",sc:"URL: /account/12345/payments → /account/12346/payments\nResult: Another customer's data visible",opts:["Performance test","Regression test","Security test — verify users cannot access payment data belonging to other customers","UAT"],ans:2,why:"Security test! Accessing another customer's data by changing a URL is a critical vulnerability."},
+  {phase:"WHICH TEST? 💳",pts:200,q:"3G customers report their payment spins forever with no confirmation — they don't know if they were charged. Which test was missing?",sc:"WiFi: Payment completes in 1s\n3G: Times out — blank screen, no message\nRisk: customer may pay again",opts:["Regression test","UAT","Network condition testing — payment flow never tested on slow or unstable connections","Smoke test"],ans:2,why:"Network condition testing! Payment flows must handle network failures gracefully with clear messages."},
+  {phase:"WHICH TEST? 💳",pts:200,q:"Finance and ops need to confirm the reconciliation system matches settlement requirements before go-live. Which test?",sc:"Dev: Done · QA: Signed off\nFinance reviewed: No · Ops confirmed: No",opts:["Regression test","Integration test","UAT — real finance and ops users validate the system meets their actual reconciliation needs","Exploratory test"],ans:2,why:"UAT! Finance must sign off that totals match, settlement files are accurate, and refund records are correct."},
+  {phase:"WHICH TEST? 💳",pts:200,q:"A payment team deploys 20 times/day and needs feedback within 10 minutes of each deployment. What is the right approach?",sc:"Deployments/day: 20\nFull regression: 4 hours\nRequired feedback: under 10 mins",opts:["Run full 4-hour regression after every deployment","Run no automated tests","Run fast automated smoke and sanity on every deployment, full regression nightly","Run UAT after every deployment"],ans:2,why:"Tiered automation! Fast smoke/sanity after every deploy, full regression nightly. Fast feedback without blocking the team."}
 ];
 
 var ROUND_COUNT = 6;
-var session=[],cur=0,score=0,streak=0,sel=null,answered=false;
-var currentPlayerName = '';
+var session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='';
 
-// ── GitHub API ──────────────────────────────────────────────────────────────
-function ghHeaders(){
-  return {'Authorization':'token '+GITHUB_TOKEN,'Accept':'application/vnd.github.v3+json','Content-Type':'application/json'};
+// ── READ scores (no token needed — public raw URL) ─────────────────────────
+function readScores(cb){
+  fetch(RAW_URL+'?t='+Date.now())
+    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(function(data){ cb(null,data); })
+    .catch(function(e){ cb(e,[]); });
 }
-function fetchScores(cb){
-  fetch(API_BASE+'?t='+Date.now(),{headers:ghHeaders()})
-    .then(function(r){return r.json();})
-    .then(function(d){
-      var scores=[];
-      try{scores=JSON.parse(atob(d.content.replace(/\n/g,'')));}catch(e){}
-      cb(null,scores,d.sha);
-    }).catch(function(e){cb(e,[],null);});
-}
-function saveScore(name,finalScore,finalStreak,cb){
-  fetchScores(function(err,scores,sha){
-    if(err){if(cb)cb(err);return;}
-    var existing=null;
-    for(var i=0;i<scores.length;i++){if(scores[i].name===name){existing=scores[i];break;}}
-    if(existing){
-      if(finalScore>existing.score){existing.score=finalScore;existing.streak=Math.max(existing.streak||0,finalStreak);}
-    } else {
-      scores.push({name:name,score:finalScore,streak:finalStreak,ts:Date.now()});
+
+// ── WRITE scores (needs PAT via GitHub Contents API) ──────────────────────
+function writeScore(name,finalScore,finalStreak,cb){
+  // Step 1: get current file + SHA
+  fetch(API_URL+'?t='+Date.now(),{
+    headers:{
+      'Authorization':'token '+GITHUB_TOKEN,
+      'Accept':'application/vnd.github.v3+json'
     }
-    scores.sort(function(a,b){return b.score-a.score;});
-    var body=JSON.stringify({message:'Score: '+name+' ('+finalScore+' pts)',content:btoa(JSON.stringify(scores,null,2)),sha:sha});
-    fetch(API_BASE,{method:'PUT',headers:ghHeaders(),body:body})
-      .then(function(){if(cb)cb(null);}).catch(function(e){if(cb)cb(e);});
-  });
-}
-function loadLiveLeaderboard(){
-  fetchScores(function(err,scores){
-    if(err)return;
-    document.getElementById('statPlayers').textContent=scores.length||'0';
-    renderLB(scores,currentPlayerName);
-  });
+  })
+  .then(function(r){ if(!r.ok) throw new Error('Read failed: '+r.status); return r.json(); })
+  .then(function(fileData){
+    // Step 2: decode current scores
+    var scores=[];
+    try{ scores=JSON.parse(atob(fileData.content.replace(/\n/g,''))); }catch(e){}
+    // Step 3: upsert this player
+    var found=false;
+    for(var i=0;i<scores.length;i++){
+      if(scores[i].name===name){
+        if(finalScore>scores[i].score){ scores[i].score=finalScore; scores[i].streak=finalStreak; }
+        found=true; break;
+      }
+    }
+    if(!found){ scores.push({name:name,score:finalScore,streak:finalStreak}); }
+    scores.sort(function(a,b){ return b.score-a.score; });
+    // Step 4: write back
+    return fetch(API_URL,{
+      method:'PUT',
+      headers:{
+        'Authorization':'token '+GITHUB_TOKEN,
+        'Accept':'application/vnd.github.v3+json',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        message:'Score: '+name+' ('+finalScore+' pts)',
+        content:btoa(JSON.stringify(scores,null,2)),
+        sha:fileData.sha
+      })
+    });
+  })
+  .then(function(r){ if(!r.ok) throw new Error('Write failed: '+r.status); cb(null); })
+  .catch(function(e){ cb(e); });
 }
 // ───────────────────────────────────────────────────────────────────────────
+
+function loadLeaderboard(){
+  readScores(function(err,scores){
+    if(err){ return; }
+    document.getElementById('statPlayers').textContent=scores.length||'0';
+    renderLB(scores,currentName);
+  });
+}
 
 function renderLB(scores,highlight){
   var list=document.getElementById('leaderboardList');
   if(!scores||!scores.length){list.innerHTML='<div class="lb-empty">No players yet.<br>Be the first!</div>';return;}
   var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'],html='',top5=scores.slice(0,5);
   for(var i=0;i<top5.length;i++){
-    var e=top5[i],hi=(e.name===highlight)?' highlight':'',top=(i===0)?' top1':'',rc=(i===0)?'r1':(i===1)?'r2':(i===2)?'r3':'rn',rank=(i<3)?medals[i]:('#'+(i+1)),sh=(e.streak>1)?'<div class="lb-streak">'+e.streak+'\uD83D\uDD25 best</div>':'';
+    var e=top5[i],hi=(e.name===highlight)?' highlight':'',top=(i===0)?' top1':'',rc=(i===0)?'r1':(i===1)?'r2':(i===2)?'r3':'rn',rank=(i<3)?medals[i]:('#'+(i+1)),sh=(e.streak>1)?'<div class="lb-streak">'+e.streak+'\uD83D\uDD25</div>':'';
     html+='<div class="lb-entry'+top+hi+'"><div class="lb-rank '+rc+'">'+rank+'</div><div class="lb-name">'+esc(e.name)+'</div><div style="text-align:right"><div class="lb-score">'+e.score+'</div>'+sh+'</div></div>';
   }
   list.innerHTML=html;
 }
-function pickQuestions(){var copy=ALL_QUESTIONS.slice();for(var i=copy.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var tmp=copy[i];copy[i]=copy[j];copy[j]=tmp;}var ptMap=[100,100,150,150,200,200];return copy.slice(0,ROUND_COUNT).map(function(q,i){return Object.assign({},q,{round:i+1,points:ptMap[i]});});}
-function init(){session=pickQuestions();loadLiveLeaderboard();loadQuestion(0);makeQR();setInterval(loadLiveLeaderboard,15000);}
-function makeQR(){try{new QRCode(document.getElementById('qrCanvas'),{text:QUIZ_URL,width:160,height:160,colorDark:'#00ff88',colorLight:'#0a0a0f',correctLevel:QRCode.CorrectLevel.M});}catch(e){}}
+
+function pickQuestions(){
+  var copy=ALL_QUESTIONS.slice();
+  for(var i=copy.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=copy[i];copy[i]=copy[j];copy[j]=t;}
+  var pts=[100,100,150,150,200,200];
+  return copy.slice(0,ROUND_COUNT).map(function(q,i){return Object.assign({},q,{round:i+1,points:pts[i]});});
+}
+
+function init(){
+  session=pickQuestions();
+  loadLeaderboard();
+  loadQuestion(0);
+  makeQR();
+  setInterval(loadLeaderboard,15000);
+}
+
+function makeQR(){
+  try{new QRCode(document.getElementById('qrCanvas'),{text:QUIZ_URL,width:160,height:160,colorDark:'#00ff88',colorLight:'#0a0a0f',correctLevel:QRCode.CorrectLevel.M});}catch(e){}
+}
+
 function loadQuestion(idx){
   if(idx>=session.length){showGameOver();return;}
   var q=session[idx];sel=null;answered=false;
@@ -278,57 +322,119 @@ function loadQuestion(idx){
   if(q.sc){sb.style.display='block';sb.textContent=q.sc;}else{sb.style.display='none';}
   var grid=document.getElementById('optionsGrid'),letters=['A','B','C','D'];
   grid.innerHTML='';
-  q.opts.forEach(function(opt,i){var btn=document.createElement('button');btn.className='option-btn';var ltr=document.createElement('span');ltr.className='option-letter';ltr.textContent=letters[i];var txt=document.createElement('span');txt.textContent=opt;btn.appendChild(ltr);btn.appendChild(txt);btn.addEventListener('click',(function(ii,bb){return function(){selectOption(ii,bb);};})(i,btn));grid.appendChild(btn);});
+  q.opts.forEach(function(opt,i){
+    var btn=document.createElement('button');btn.className='option-btn';
+    var ltr=document.createElement('span');ltr.className='option-letter';ltr.textContent=letters[i];
+    var txt=document.createElement('span');txt.textContent=opt;
+    btn.appendChild(ltr);btn.appendChild(txt);
+    btn.addEventListener('click',(function(ii,bb){return function(){selectOption(ii,bb);};})(i,btn));
+    grid.appendChild(btn);
+  });
   document.getElementById('feedbackBox').className='feedback-box';
   document.getElementById('feedbackBox').textContent='';
   document.getElementById('nextBtn').className='next-btn';
   document.getElementById('submitBtn').disabled=false;
-  document.getElementById('savingNote').textContent='';
+  document.getElementById('saveStatus').textContent='';
+  document.getElementById('saveStatus').className='save-status';
   document.getElementById('questionCard').style.display='block';
   document.getElementById('gameOverScreen').className='game-over-screen';
 }
-function selectOption(idx,btn){if(answered)return;sel=idx;var btns=document.querySelectorAll('.option-btn');for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');btn.classList.add('selected');}
+
+function selectOption(idx,btn){
+  if(answered)return;
+  sel=idx;
+  var btns=document.querySelectorAll('.option-btn');
+  for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');
+  btn.classList.add('selected');
+}
+
 function submitAnswer(){
-  if(answered)return;if(sel===null){showToast('Pick an option first!');return;}
-  currentPlayerName=document.getElementById('playerName').value.trim()||'Anonymous';
-  answered=true;document.getElementById('submitBtn').disabled=true;
+  if(answered)return;
+  if(sel===null){showToast('Pick an option first!');return;}
+  currentName=document.getElementById('playerName').value.trim()||'Anonymous';
+  answered=true;
+  document.getElementById('submitBtn').disabled=true;
   var q=session[cur],correct=(sel===q.ans);
   var btns=document.querySelectorAll('.option-btn');
-  for(var i=0;i<btns.length;i++){if(i===q.ans)btns[i].classList.add('correct');else if(i===sel&&!correct)btns[i].classList.add('wrong');}
+  for(var i=0;i<btns.length;i++){
+    if(i===q.ans)btns[i].classList.add('correct');
+    else if(i===sel&&!correct)btns[i].classList.add('wrong');
+  }
   var fb=document.getElementById('feedbackBox');
   if(correct){
     var bonus=streak*10,pts=q.points+bonus;score+=pts;streak++;
-    var note=streak>1?'  \u00b7  '+streak+'\uD83D\uDD25 streak! +'+bonus+' bonus':'';
-    fb.textContent='\u2705  '+q.why+'  (+'+pts+' pts'+note+')';
+    var note=streak>1?' · '+streak+'\uD83D\uDD25 streak! +'+bonus+' bonus':'';
+    fb.textContent='\u2705 '+q.why+' (+'+pts+' pts'+note+')';
     fb.className='feedback-box correct-fb show';
     celebrate();
-    document.getElementById('savingNote').textContent='💾 Saving to leaderboard...';
-    saveScore(currentPlayerName,score,streak,function(){
-      document.getElementById('savingNote').textContent='✅ Score saved!';
-      loadLiveLeaderboard();
+    // Save score
+    var st=document.getElementById('saveStatus');
+    st.textContent='💾 Saving score...';
+    st.className='save-status saving';
+    writeScore(currentName,score,streak,function(err){
+      if(err){
+        st.textContent='⚠️ Save failed: '+err.message;
+        st.className='save-status error';
+      } else {
+        st.textContent='✅ Score saved!';
+        st.className='save-status saved';
+        loadLeaderboard();
+      }
     });
   } else {
-    streak=0;fb.textContent='\u274C  '+q.why;fb.className='feedback-box wrong-fb show';
+    streak=0;
+    fb.textContent='\u274C '+q.why;
+    fb.className='feedback-box wrong-fb show';
   }
-  updateStats();document.getElementById('nextBtn').className='next-btn show';
+  updateStats();
+  document.getElementById('nextBtn').className='next-btn show';
 }
+
 function nextQuestion(){cur++;loadQuestion(cur);}
-function updateStats(){document.getElementById('statScore').textContent=score;document.getElementById('statStreak').textContent=streak;}
-function celebrate(){var cel=document.getElementById('celebration');cel.style.display='block';cel.innerHTML='';var colors=['#00ff88','#ff3366','#ffcc00','#00aaff','#cc88ff'];for(var i=0;i<30;i++){var p=document.createElement('div');p.className='confetti-piece';p.style.left=(Math.random()*100)+'vw';p.style.background=colors[Math.floor(Math.random()*colors.length)];p.style.animationDelay=(Math.random()*0.5)+'s';p.style.borderRadius=Math.random()>0.5?'50%':'0';cel.appendChild(p);}var msg=streak>3?'\uD83D\uDD25 ON FIRE!':streak>1?(streak+'x STREAK!'):'\u2705 CORRECT!';var toast=document.createElement('div');toast.className='toast';toast.textContent=msg;cel.appendChild(toast);setTimeout(function(){cel.style.display='none';cel.innerHTML='';},2000);}
-function showToast(msg){var cel=document.getElementById('celebration');cel.style.display='block';var toast=document.createElement('div');toast.className='toast';toast.style.borderColor='#ffcc00';toast.style.color='#ffcc00';toast.style.boxShadow='0 0 40px rgba(255,204,0,0.4)';toast.textContent=msg;cel.appendChild(toast);setTimeout(function(){cel.style.display='none';cel.innerHTML='';},1500);}
+
+function updateStats(){
+  document.getElementById('statScore').textContent=score;
+  document.getElementById('statStreak').textContent=streak;
+}
+
+function celebrate(){
+  var cel=document.getElementById('celebration');cel.style.display='block';cel.innerHTML='';
+  var colors=['#00ff88','#ff3366','#ffcc00','#00aaff','#cc88ff'];
+  for(var i=0;i<30;i++){
+    var p=document.createElement('div');p.className='confetti-piece';
+    p.style.left=(Math.random()*100)+'vw';p.style.background=colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDelay=(Math.random()*0.5)+'s';p.style.borderRadius=Math.random()>0.5?'50%':'0';
+    cel.appendChild(p);
+  }
+  var msg=streak>3?'\uD83D\uDD25 ON FIRE!':streak>1?(streak+'x STREAK!'):'\u2705 CORRECT!';
+  var toast=document.createElement('div');toast.className='toast';toast.textContent=msg;
+  cel.appendChild(toast);
+  setTimeout(function(){cel.style.display='none';cel.innerHTML='';},2000);
+}
+
+function showToast(msg){
+  var cel=document.getElementById('celebration');cel.style.display='block';
+  var toast=document.createElement('div');toast.className='toast';
+  toast.style.borderColor='#ffcc00';toast.style.color='#ffcc00';toast.style.boxShadow='0 0 40px rgba(255,204,0,0.4)';
+  toast.textContent=msg;cel.appendChild(toast);
+  setTimeout(function(){cel.style.display='none';cel.innerHTML='';},1500);
+}
+
 function showGameOver(){
   document.getElementById('questionCard').style.display='none';
   document.getElementById('gameOverScreen').className='game-over-screen show';
   var max=0;for(var i=0;i<session.length;i++)max+=session[i].points;
-  var pct=Math.round((score/max)*100),grade=pct>=85?'\uD83C\uDFC6 Master Tester \u2014 Nothing Gets Past You!':pct>=65?'\uD83E\uDDEA Sharp Tester \u2014 You\'ve Got the Eye!':pct>=40?'\uD83D\uDD0D Getting There \u2014 Keep Practising!':'\uD83C\uDF31 Tester in Training \u2014 Try Again!';
+  var pct=Math.round((score/max)*100);
+  var grade=pct>=85?'\uD83C\uDFC6 Master Tester!':pct>=65?'\uD83E\uDDEA Sharp Tester!':pct>=40?'\uD83D\uDD0D Getting There!':'\uD83C\uDF31 Tester in Training!';
   document.getElementById('finalScoreDisplay').innerHTML=score+' pts<br><span style="font-size:13px;color:var(--accent3)">('+pct+'%)</span><br><span style="font-size:14px;color:var(--muted)">'+grade+'</span>';
   document.getElementById('progressFill').style.width='100%';
-  document.getElementById('statQ').textContent=ROUND_COUNT+'/'+ROUND_COUNT;
   celebrate();
-  saveScore(currentPlayerName,score,streak,function(){loadLiveLeaderboard();});
+  writeScore(currentName,score,streak,function(){ loadLeaderboard(); });
 }
-function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentPlayerName='';session=pickQuestions();updateStats();loadQuestion(0);}
+
+function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentName='';session=pickQuestions();updateStats();loadQuestion(0);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 init();
 </script>
 </body>
