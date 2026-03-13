@@ -45,10 +45,8 @@ header{text-align:center;padding:36px 0 24px}
 .option-btn{background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:14px 16px;text-align:left;cursor:pointer;font-family:'Space Mono',monospace;font-size:13px;color:var(--text);transition:all 0.2s;display:flex;align-items:flex-start;gap:12px;width:100%}
 .option-btn:hover{background:rgba(0,255,136,0.08);border-color:var(--accent);transform:translateX(4px)}
 .option-btn.selected{background:rgba(0,255,136,0.12);border-color:var(--accent);box-shadow:var(--glow)}
-.option-btn.correct{background:rgba(0,255,136,0.2);border-color:var(--accent);animation:correctFlash 0.5s ease}
-.option-btn.wrong{background:rgba(255,51,102,0.15);border-color:var(--accent2);animation:wrongShake 0.4s ease}
-@keyframes correctFlash{0%{transform:scale(1)}50%{transform:scale(1.02);box-shadow:0 0 30px rgba(0,255,136,0.5)}100%{transform:scale(1)}}
-@keyframes wrongShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.option-btn.correct{background:rgba(0,255,136,0.2);border-color:var(--accent)}
+.option-btn.wrong{background:rgba(255,51,102,0.15);border-color:var(--accent2)}
 .option-letter{font-family:'Unbounded',sans-serif;font-size:12px;font-weight:700;color:var(--accent);min-width:22px;height:22px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .option-btn.wrong .option-letter{color:var(--accent2);background:rgba(255,51,102,0.1);border-color:rgba(255,51,102,0.3)}
 .option-btn.correct .option-letter{color:var(--bg);background:var(--accent);border-color:var(--accent)}
@@ -167,7 +165,7 @@ header{text-align:center;padding:36px 0 24px}
         <div class="lb-sub">🌐 LIVE · SHARED ACROSS ALL PLAYERS</div>
         <div id="leaderboardList"><div class="lb-empty">Loading...</div></div>
         <hr class="lb-divider">
-        <div style="font-size:10px;color:var(--muted);text-align:center;letter-spacing:1px" id="lbStatus">Scores stored in GitHub</div>
+        <div style="font-size:10px;color:var(--muted);text-align:center;letter-spacing:1px">Scores stored in GitHub</div>
       </div>
       <div class="qr-box">
         <div id="qrCanvas"></div>
@@ -179,17 +177,13 @@ header{text-align:center;padding:36px 0 24px}
 <div class="celebration" id="celebration" style="display:none"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-// ── CONFIG — replace GITHUB_TOKEN with your PAT ────────────────────────────
-var GITHUB_TOKEN = ''; // Replace with your PAT
-var GITHUB_OWNER = 'shubhaje';
-var GITHUB_REPO  = 'payment-gathering-quiz';
-var SCORES_FILE  = 'scores.json';
-var QUIZ_URL     = 'https://shubhaje.github.io/payment-gathering-quiz/';
-// READ  uses raw.githubusercontent.com — no token needed
-var RAW_URL  = 'https://raw.githubusercontent.com/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/main/' + SCORES_FILE;
-// WRITE uses GitHub Contents API — needs PAT
-var API_URL  = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + SCORES_FILE;
-// ───────────────────────────────────────────────────────────────────────────
+// Token is injected here by GitHub Actions deploy workflow — never stored in this file
+var DISPATCH_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__';
+var GITHUB_OWNER   = 'shubhaje';
+var GITHUB_REPO    = 'payment-gathering-quiz';
+var QUIZ_URL       = 'https://shubhaje.github.io/payment-gathering-quiz/';
+var RAW_URL        = 'https://raw.githubusercontent.com/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/main/scores.json';
+var DISPATCH_URL   = 'https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/dispatches';
 
 var ALL_QUESTIONS = [
   {phase:"SMOKE TEST",pts:100,q:"What is a Smoke Test?",sc:null,opts:["A full test of every feature and edge case","A quick check of the most critical features to confirm a build is stable enough for deeper testing","A test that checks only the visual design","A security scan to find vulnerabilities"],ans:1,why:"A smoke test is fast and shallow — is this build alive? If core features fail, there is no point running anything deeper."},
@@ -205,78 +199,47 @@ var ALL_QUESTIONS = [
   {phase:"WHICH TEST? 💳",pts:100,q:"A new payment build has arrived. The Pay button has not been tested. You have 10 minutes. Which test do you run?",sc:"New payment build — untested\nFull regression suite = 3 hours\nTime available = 10 minutes",opts:["Regression test — run all 200 payment test cases","Smoke test — confirm the core payment journey works before going deeper","UAT — hand it to the finance team","Exploratory test — click freely around"],ans:1,why:"Smoke test! If the Pay button is broken, running 200 more tests is pointless. Smoke first."},
   {phase:"WHICH TEST? 💳",pts:100,q:"A developer says: 'I fixed the bug where Amex cards were declined.' What is the FIRST test you run?",sc:null,opts:["Regression test — rerun all payment tests","Smoke test — quick check across the whole payment page","Sanity test — go directly to Amex payment and confirm it now succeeds","UAT — ask finance to verify"],ans:2,why:"Sanity test! Go straight to Amex payments and confirm the specific fix works. Then run regression."},
   {phase:"WHICH TEST? 💳",pts:100,q:"Apple Pay has been added. Visa, Mastercard, and PayPal worked before. Which test confirms they still work?",sc:"New: Apple Pay added\nVisa, Mastercard, PayPal: unchanged",opts:["Smoke test — confirm Apple Pay button appears","Regression test — rerun tests on existing payment methods to confirm none were broken","UAT — ask finance to confirm Apple Pay meets requirements","Integration test — check Apple Pay connects to gateway"],ans:1,why:"Regression test! Adding a new payment method touches shared gateway code — existing methods may be affected."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"The payment module and fraud detection each pass all their own tests. But valid Visa payments are being blocked as fraudulent. Which test is needed?",sc:"Payment module: All passed\nFraud detection: All passed\nResult: Valid Visa payments declined",opts:["Regression test","Smoke test","Integration test — test how the payment module and fraud detection interact and pass data","UAT"],ans:2,why:"Integration test! Two systems passing their own tests doesn't mean they work correctly together."},
+  {phase:"WHICH TEST? 💳",pts:100,q:"The payment module and fraud detection each pass all their own tests. But valid Visa payments are being blocked. Which test?",sc:"Payment module: All passed\nFraud detection: All passed\nResult: Valid Visa payments declined",opts:["Regression test","Smoke test","Integration test — test how the payment module and fraud detection interact","UAT"],ans:2,why:"Integration test! Two systems passing their own tests doesn't mean they work correctly together."},
   {phase:"WHICH TEST? 💳",pts:150,q:"A payment platform expects 50x normal volume during Black Friday. Tested capacity is unknown. Which test is essential?",sc:"Normal: 10,000 transactions/day\nBlack Friday: 500,000/day\nTested capacity: unknown",opts:["Smoke test","Regression test","Load test — simulate high volumes to find capacity limits before real customers hit them","UAT"],ans:2,why:"Load test! Find the slowdowns and failure points before Black Friday, not during it."},
   {phase:"WHICH TEST? 💳",pts:150,q:"You need to know what happens when the payment platform is pushed far beyond maximum capacity. Which test?",sc:"Normal: 50,000 transactions/hour\nTarget: find exact breaking point",opts:["Load test — simulate normal expected volumes","Regression test","Stress test — push far beyond capacity to find exactly where and how it breaks","Sanity test"],ans:2,why:"Stress test! Does it crash and lose transactions? Reject gracefully? Know this before a real overload."},
   {phase:"WHICH TEST? 💳",pts:150,q:"All tests passed. A tester spends 30 minutes freely exploring checkout — two discount codes, virtual card, two tabs. What is this?",sc:null,opts:["Regression testing","Sanity testing","Exploratory testing — unscripted investigation to find bugs no test case imagined","Smoke testing"],ans:2,why:"Exploratory testing! Real customers do unexpected things. This finds the most impactful bugs."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"Payment works on desktop but the Pay Now button is cut off on budget Android phones. Which testing was missed?",sc:"Desktop: All passed\nMobile: Pay Now missing on screens under 400px",opts:["Regression testing","Integration testing","Cross-device and mobile compatibility testing — not tested across the real range of user devices","UAT"],ans:2,why:"Mobile compatibility testing! Customers pay on the devices they own — budget Androids, older iPhones."},
+  {phase:"WHICH TEST? 💳",pts:150,q:"Payment works on desktop but the Pay Now button is cut off on budget Android phones. Which testing was missed?",sc:"Desktop: All passed\nMobile: Pay Now missing on screens under 400px",opts:["Regression testing","Integration testing","Cross-device and mobile compatibility testing","UAT"],ans:2,why:"Mobile compatibility testing! Customers pay on the devices they own — budget Androids, older iPhones."},
   {phase:"WHICH TEST? 💳",pts:150,q:"A tester changes their customer ID in the payment URL and views another customer's transaction history. Which test must be added?",sc:"URL: /account/12345/payments → /account/12346/payments\nResult: Another customer's data visible",opts:["Performance test","Regression test","Security test — verify users cannot access payment data belonging to other customers","UAT"],ans:2,why:"Security test! Accessing another customer's data by changing a URL is a critical vulnerability."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"3G customers report their payment spins forever with no confirmation — they don't know if they were charged. Which test was missing?",sc:"WiFi: Payment completes in 1s\n3G: Times out — blank screen, no message\nRisk: customer may pay again",opts:["Regression test","UAT","Network condition testing — payment flow never tested on slow or unstable connections","Smoke test"],ans:2,why:"Network condition testing! Payment flows must handle network failures gracefully with clear messages."},
+  {phase:"WHICH TEST? 💳",pts:200,q:"3G customers report their payment spins forever with no confirmation. Which test was missing?",sc:"WiFi: Payment completes in 1s\n3G: Times out — blank screen, no message\nRisk: customer may pay again",opts:["Regression test","UAT","Network condition testing — payment flow never tested on slow or unstable connections","Smoke test"],ans:2,why:"Network condition testing! Payment flows must handle network failures gracefully with clear messages."},
   {phase:"WHICH TEST? 💳",pts:200,q:"Finance and ops need to confirm the reconciliation system matches settlement requirements before go-live. Which test?",sc:"Dev: Done · QA: Signed off\nFinance reviewed: No · Ops confirmed: No",opts:["Regression test","Integration test","UAT — real finance and ops users validate the system meets their actual reconciliation needs","Exploratory test"],ans:2,why:"UAT! Finance must sign off that totals match, settlement files are accurate, and refund records are correct."},
   {phase:"WHICH TEST? 💳",pts:200,q:"A payment team deploys 20 times/day and needs feedback within 10 minutes of each deployment. What is the right approach?",sc:"Deployments/day: 20\nFull regression: 4 hours\nRequired feedback: under 10 mins",opts:["Run full 4-hour regression after every deployment","Run no automated tests","Run fast automated smoke and sanity on every deployment, full regression nightly","Run UAT after every deployment"],ans:2,why:"Tiered automation! Fast smoke/sanity after every deploy, full regression nightly. Fast feedback without blocking the team."}
 ];
 
-var ROUND_COUNT = 6;
-var session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='';
+var ROUND_COUNT=6,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='';
 
-// ── READ scores (no token needed — public raw URL) ─────────────────────────
-function readScores(cb){
-  fetch(RAW_URL+'?t='+Date.now())
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(function(data){ cb(null,data); })
-    .catch(function(e){ cb(e,[]); });
-}
-
-// ── WRITE scores (needs PAT via GitHub Contents API) ──────────────────────
-function writeScore(name,finalScore,finalStreak,cb){
-  // Step 1: get current file + SHA
-  fetch(API_URL+'?t='+Date.now(),{
+function saveScore(name,finalScore,finalStreak,cb){
+  fetch(DISPATCH_URL,{
+    method:'POST',
     headers:{
-      'Authorization':'token '+GITHUB_TOKEN,
-      'Accept':'application/vnd.github.v3+json'
-    }
+      'Authorization':'token '+DISPATCH_TOKEN,
+      'Accept':'application/vnd.github.v3+json',
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({
+      event_type:'save-score',
+      client_payload:{name:name,score:finalScore,streak:finalStreak}
+    })
   })
-  .then(function(r){ if(!r.ok) throw new Error('Read failed: '+r.status); return r.json(); })
-  .then(function(fileData){
-    // Step 2: decode current scores
-    var scores=[];
-    try{ scores=JSON.parse(atob(fileData.content.replace(/\n/g,''))); }catch(e){}
-    // Step 3: upsert this player
-    var found=false;
-    for(var i=0;i<scores.length;i++){
-      if(scores[i].name===name){
-        if(finalScore>scores[i].score){ scores[i].score=finalScore; scores[i].streak=finalStreak; }
-        found=true; break;
-      }
-    }
-    if(!found){ scores.push({name:name,score:finalScore,streak:finalStreak}); }
-    scores.sort(function(a,b){ return b.score-a.score; });
-    // Step 4: write back
-    return fetch(API_URL,{
-      method:'PUT',
-      headers:{
-        'Authorization':'token '+GITHUB_TOKEN,
-        'Accept':'application/vnd.github.v3+json',
-        'Content-Type':'application/json'
-      },
-      body:JSON.stringify({
-        message:'Score: '+name+' ('+finalScore+' pts)',
-        content:btoa(JSON.stringify(scores,null,2)),
-        sha:fileData.sha
-      })
-    });
+  .then(function(r){
+    if(r.status===204){cb(null);}
+    else{return r.json().then(function(d){throw new Error(r.status+': '+(d.message||'unknown'));});}
   })
-  .then(function(r){ if(!r.ok) throw new Error('Write failed: '+r.status); cb(null); })
-  .catch(function(e){ cb(e); });
+  .catch(function(e){cb(e);});
 }
-// ───────────────────────────────────────────────────────────────────────────
 
 function loadLeaderboard(){
-  readScores(function(err,scores){
-    if(err){ return; }
-    document.getElementById('statPlayers').textContent=scores.length||'0';
-    renderLB(scores,currentName);
-  });
+  fetch(RAW_URL+'?t='+Date.now())
+    .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
+    .then(function(scores){
+      document.getElementById('statPlayers').textContent=scores.length||'0';
+      renderLB(scores,currentName);
+    })
+    .catch(function(){});
 }
 
 function renderLB(scores,highlight){
@@ -297,13 +260,7 @@ function pickQuestions(){
   return copy.slice(0,ROUND_COUNT).map(function(q,i){return Object.assign({},q,{round:i+1,points:pts[i]});});
 }
 
-function init(){
-  session=pickQuestions();
-  loadLeaderboard();
-  loadQuestion(0);
-  makeQR();
-  setInterval(loadLeaderboard,15000);
-}
+function init(){session=pickQuestions();loadLeaderboard();loadQuestion(0);makeQR();setInterval(loadLeaderboard,15000);}
 
 function makeQR(){
   try{new QRCode(document.getElementById('qrCanvas'),{text:QUIZ_URL,width:160,height:160,colorDark:'#00ff88',colorLight:'#0a0a0f',correctLevel:QRCode.CorrectLevel.M});}catch(e){}
@@ -341,8 +298,7 @@ function loadQuestion(idx){
 }
 
 function selectOption(idx,btn){
-  if(answered)return;
-  sel=idx;
+  if(answered)return;sel=idx;
   var btns=document.querySelectorAll('.option-btn');
   for(var i=0;i<btns.length;i++)btns[i].classList.remove('selected');
   btn.classList.add('selected');
@@ -352,8 +308,7 @@ function submitAnswer(){
   if(answered)return;
   if(sel===null){showToast('Pick an option first!');return;}
   currentName=document.getElementById('playerName').value.trim()||'Anonymous';
-  answered=true;
-  document.getElementById('submitBtn').disabled=true;
+  answered=true;document.getElementById('submitBtn').disabled=true;
   var q=session[cur],correct=(sel===q.ans);
   var btns=document.querySelectorAll('.option-btn');
   for(var i=0;i<btns.length;i++){
@@ -367,35 +322,24 @@ function submitAnswer(){
     fb.textContent='\u2705 '+q.why+' (+'+pts+' pts'+note+')';
     fb.className='feedback-box correct-fb show';
     celebrate();
-    // Save score
     var st=document.getElementById('saveStatus');
-    st.textContent='💾 Saving score...';
-    st.className='save-status saving';
-    writeScore(currentName,score,streak,function(err){
-      if(err){
-        st.textContent='⚠️ Save failed: '+err.message;
-        st.className='save-status error';
-      } else {
-        st.textContent='✅ Score saved!';
+    st.textContent='💾 Saving score...';st.className='save-status saving';
+    saveScore(currentName,score,streak,function(err){
+      if(err){st.textContent='\u26a0\ufe0f Save failed: '+err.message;st.className='save-status error';}
+      else{
+        st.textContent='\u2705 Score submitted! Leaderboard updates in ~30s';
         st.className='save-status saved';
-        loadLeaderboard();
+        setTimeout(loadLeaderboard,35000);
       }
     });
   } else {
-    streak=0;
-    fb.textContent='\u274C '+q.why;
-    fb.className='feedback-box wrong-fb show';
+    streak=0;fb.textContent='\u274C '+q.why;fb.className='feedback-box wrong-fb show';
   }
-  updateStats();
-  document.getElementById('nextBtn').className='next-btn show';
+  updateStats();document.getElementById('nextBtn').className='next-btn show';
 }
 
 function nextQuestion(){cur++;loadQuestion(cur);}
-
-function updateStats(){
-  document.getElementById('statScore').textContent=score;
-  document.getElementById('statStreak').textContent=streak;
-}
+function updateStats(){document.getElementById('statScore').textContent=score;document.getElementById('statStreak').textContent=streak;}
 
 function celebrate(){
   var cel=document.getElementById('celebration');cel.style.display='block';cel.innerHTML='';
@@ -407,8 +351,7 @@ function celebrate(){
     cel.appendChild(p);
   }
   var msg=streak>3?'\uD83D\uDD25 ON FIRE!':streak>1?(streak+'x STREAK!'):'\u2705 CORRECT!';
-  var toast=document.createElement('div');toast.className='toast';toast.textContent=msg;
-  cel.appendChild(toast);
+  var toast=document.createElement('div');toast.className='toast';toast.textContent=msg;cel.appendChild(toast);
   setTimeout(function(){cel.style.display='none';cel.innerHTML='';},2000);
 }
 
@@ -427,14 +370,12 @@ function showGameOver(){
   var pct=Math.round((score/max)*100);
   var grade=pct>=85?'\uD83C\uDFC6 Master Tester!':pct>=65?'\uD83E\uDDEA Sharp Tester!':pct>=40?'\uD83D\uDD0D Getting There!':'\uD83C\uDF31 Tester in Training!';
   document.getElementById('finalScoreDisplay').innerHTML=score+' pts<br><span style="font-size:13px;color:var(--accent3)">('+pct+'%)</span><br><span style="font-size:14px;color:var(--muted)">'+grade+'</span>';
-  document.getElementById('progressFill').style.width='100%';
-  celebrate();
-  writeScore(currentName,score,streak,function(){ loadLeaderboard(); });
+  document.getElementById('progressFill').style.width='100%';celebrate();
+  saveScore(currentName,score,streak,function(){setTimeout(loadLeaderboard,35000);});
 }
 
 function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentName='';session=pickQuestions();updateStats();loadQuestion(0);}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
 init();
 </script>
 </body>
