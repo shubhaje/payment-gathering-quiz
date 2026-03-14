@@ -68,6 +68,12 @@
     "streak": 4
   },
   {
+    "name": "Test1",
+    "score": 760,
+    "streak": 1,
+    "time": 100
+  },
+  {
     "name": "Test",
     "score": 630,
     "streak": 0,
