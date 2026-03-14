@@ -82,7 +82,7 @@ header{text-align:center;padding:36px 0 32px}
   </div>
 
   <div class="actions">
-    <a class="play-btn" href="index.html">🧪 Play the Quiz</a>
+    <a class="play-btn" href="/payment-gathering-quiz/">🧪 Play the Quiz</a>
   </div>
 
   <div class="qr-section">
@@ -100,7 +100,11 @@ var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 var CDN_URL  = 'https://cdn.jsdelivr.net/gh/shubhaje/payment-gathering-quiz@main/scores.json';
 
 function fetchAndRender(){
-  fetch(CDN_URL + '?t=' + Date.now() + '&r=' + Math.random())
+  // Force bypass all caches including browser cache
+  fetch(CDN_URL + '?t=' + Date.now() + '&r=' + Math.random(), {
+    cache: 'no-store',
+    headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache, no-store' }
+  })
   .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
   .then(function(scores){
     render(scores);

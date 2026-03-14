@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script>
+  // GitHub Pages clean URL redirect
+  // Redirects /leaderboard → /leaderboard.html
+  var path = window.location.pathname;
+  var pages = ['/leaderboard'];
+  for (var i = 0; i < pages.length; i++) {
+    if (path === pages[i] || path === pages[i] + '/') {
+      window.location.replace(
+        window.location.origin + pages[i] + '.html' + window.location.search
+      );
+    }
+  }
+  // If no match, redirect home
+  window.location.replace(window.location.origin + '/payment-gathering-quiz/');
+</script>
+</head>
+<body></body>
+</html>
