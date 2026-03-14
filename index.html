@@ -210,9 +210,9 @@ var ALL_QUESTIONS = [
   {phase:"WHICH TEST? 💳",pts:200,q:"A payment team deploys 20 times/day and needs feedback within 10 minutes of each deployment. What is the right approach?",sc:"Deployments/day: 20\nFull regression: 4 hours\nRequired feedback: under 10 mins",opts:["Run full 4-hour regression after every deployment","Run no automated tests","Run fast automated smoke and sanity on every deployment, full regression nightly","Run UAT after every deployment"],ans:2,why:"Tiered automation! Fast smoke/sanity after every deploy, full regression nightly. Fast feedback without blocking the team."}
 ];
 
-var ROUND_COUNT=6,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='';
+var ROUND_COUNT=6,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='',startTime=0;
 
-function saveScore(name,finalScore,finalStreak,cb){
+function saveScore(name,finalScore,finalStreak,timeTaken,cb){
   fetch(DISPATCH_URL,{
     method:'POST',
     headers:{
@@ -222,7 +222,7 @@ function saveScore(name,finalScore,finalStreak,cb){
     },
     body:JSON.stringify({
       event_type:'save-score',
-      client_payload:{name:name,score:finalScore,streak:finalStreak}
+      client_payload:{name:name,score:finalScore,streak:finalStreak,time:timeTaken}
     })
   })
   .then(function(r){
@@ -263,7 +263,7 @@ function pickQuestions(){
   return copy.slice(0,ROUND_COUNT).map(function(q,i){return Object.assign({},q,{round:i+1,points:pts[i]});});
 }
 
-function init(){session=pickQuestions();loadLeaderboard();loadQuestion(0);makeQR();setInterval(loadLeaderboard,15000);}
+function init(){session=pickQuestions();loadLeaderboard();loadQuestion(0);makeQR();setInterval(loadLeaderboard,15000);startTime=Date.now();}
 
 function makeQR(){
   try{new QRCode(document.getElementById('qrCanvas'),{text:QUIZ_URL,width:160,height:160,colorDark:'#00ff88',colorLight:'#0a0a0f',correctLevel:QRCode.CorrectLevel.M});}catch(e){}
@@ -367,10 +367,11 @@ function showGameOver(){
   var grade=pct>=85?'\uD83C\uDFC6 Master Tester!':pct>=65?'\uD83E\uDDEA Sharp Tester!':pct>=40?'\uD83D\uDD0D Getting There!':'\uD83C\uDF31 Tester in Training!';
   document.getElementById('finalScoreDisplay').innerHTML=score+' pts<br><span style="font-size:13px;color:var(--accent3)">('+pct+'%)</span><br><span style="font-size:14px;color:var(--muted)">'+grade+'</span>';
   document.getElementById('progressFill').style.width='100%';celebrate();
-  saveScore(currentName,score,streak,function(){setTimeout(loadLeaderboard,35000);});
+  var timeTaken=Math.round((Date.now()-startTime)/1000);
+  saveScore(currentName,score,streak,timeTaken,function(){setTimeout(loadLeaderboard,35000);});
 }
 
-function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentName='';session=pickQuestions();updateStats();loadQuestion(0);}
+function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentName='';session=pickQuestions();updateStats();loadQuestion(0);startTime=Date.now();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 init();
 </script>

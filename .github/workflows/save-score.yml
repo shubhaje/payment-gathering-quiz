@@ -53,12 +53,12 @@ jobs:
               }
             } else {
               // New player — add entry using the name as typed
-              scores.push({ name: rawName, score, streak });
+              scores.push({ name: rawName, score, streak, time });
               console.log('New player: ' + rawName + ' (' + score + ' pts)');
             }
 
             // Sort by score desc, then streak desc as tiebreaker
-            scores.sort((a, b) => b.score - a.score || (b.streak || 0) - (a.streak || 0));
+            scores.sort((a, b) => b.score - a.score || (a.time || 9999) - (b.time || 9999));
 
             fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
             console.log('Final scores:', JSON.stringify(scores, null, 2));
@@ -67,6 +67,7 @@ jobs:
           PLAYER_NAME:   ${{ github.event.client_payload.name }}
           PLAYER_SCORE:  ${{ github.event.client_payload.score }}
           PLAYER_STREAK: ${{ github.event.client_payload.streak }}
+          PLAYER_TIME:   ${{ github.event.client_payload.time }}
 
       - name: Commit updated scores.json
         run: |
@@ -116,10 +117,10 @@ jobs:
                 existing.streak = Math.max(existing.streak || 0, streak);
               }
             } else {
-              scores.push({ name: rawName, score, streak });
+              scores.push({ name: rawName, score, streak, time });
             }
 
-            scores.sort((a, b) => b.score - a.score || (b.streak || 0) - (a.streak || 0));
+            scores.sort((a, b) => b.score - a.score || (a.time || 9999) - (b.time || 9999));
             fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
           "
           git add scores.json
