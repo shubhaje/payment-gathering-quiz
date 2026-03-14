@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧪</text></svg>">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Live Leaderboard 🏆 Payment Testing Challenge</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
@@ -96,7 +97,7 @@ header{text-align:center;padding:36px 0 32px}
 <script>
 // Reads directly from raw.githubusercontent.com — no token needed for public repos
 var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
-var READ_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__'; // injected by deploy workflow 
+var READ_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__'; // injected by deploy workflow
 var SCORES_API = 'https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
 
 function fetchAndRender(){
