@@ -118,13 +118,13 @@ function fetchAndRender(){
 }
 
 function render(scores){
-  var n=scores.length;
-  document.getElementById('totalPlayers').textContent=n||'0';
-  if(n){
+  var total_n=scores.length;
+  document.getElementById('totalPlayers').textContent=total_n||'0';
+  if(total_n){
     document.getElementById('topScore').textContent=scores[0].score;
-    var total=0;for(var i=0;i<n;i++)total+=scores[i].score;
-    document.getElementById('avgScore').textContent=Math.round(total/n);
-    document.getElementById('lbCount').textContent=n+' player'+(n!==1?'s':'');
+    var total=0;for(var i=0;i<total_n;i++)total+=scores[i].score;
+    document.getElementById('avgScore').textContent=Math.round(total/total_n);
+    document.getElementById('lbCount').textContent='Top 5 of '+total_n+' player'+(total_n!==1?'s':'');
   } else {
     document.getElementById('topScore').textContent='—';
     document.getElementById('avgScore').textContent='—';
@@ -137,6 +137,7 @@ function render(scores){
   }
   var medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
   var ec=['top1','top2','top3'],rc=['r1','r2','r3'],html='';
+  scores = scores.slice(0,5);
   for(var i=0;i<scores.length;i++){
     var e=scores[i],cls=i<3?' '+ec[i]:'',rk=i<3?rc[i]:'rn',rd=i<3?medals[i]:('#'+(i+1)),delay=(i*0.05).toFixed(2);
     var sh=e.streak>1?'<div class="lb-streak">'+e.streak+'\uD83D\uDD25 best streak</div>':'';

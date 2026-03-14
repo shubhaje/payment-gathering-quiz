@@ -21,23 +21,47 @@ jobs:
             let scores = [];
             try { scores = JSON.parse(fs.readFileSync('scores.json', 'utf8')); } catch(e) {}
 
-            const name   = process.env.PLAYER_NAME;
-            const score  = parseInt(process.env.PLAYER_SCORE);
-            const streak = parseInt(process.env.PLAYER_STREAK);
+            // Normalise: trim whitespace, lowercase for comparison
+            const rawName = process.env.PLAYER_NAME.trim();
+            const score   = parseInt(process.env.PLAYER_SCORE);
+            const streak  = parseInt(process.env.PLAYER_STREAK);
 
-            const existing = scores.find(s => s.name === name);
-            if (existing) {
-              if (score > existing.score) {
-                existing.score  = score;
-                existing.streak = streak;
-              }
-            } else {
-              scores.push({ name, score, streak });
+            if (!rawName || isNaN(score) || score <= 0) {
+              console.log('Invalid payload — skipping');
+              process.exit(0);
             }
 
-            scores.sort((a, b) => b.score - a.score);
+            // Find existing entry using case-insensitive name match
+            const existingIdx = scores.findIndex(
+              s => s.name.trim().toLowerCase() === rawName.toLowerCase()
+            );
+
+            if (existingIdx !== -1) {
+              const existing = scores[existingIdx];
+              if (score > existing.score) {
+                // New score is better — update
+                console.log('Updated: ' + existing.name + ' ' + existing.score + ' -> ' + score);
+                existing.score  = score;
+                existing.streak = Math.max(existing.streak || 0, streak);
+              } else if (score === existing.score) {
+                // Same score — keep best streak
+                console.log('Same score for ' + existing.name + ' — keeping best streak');
+                existing.streak = Math.max(existing.streak || 0, streak);
+              } else {
+                // Lower score — keep existing, do nothing
+                console.log('Lower score for ' + existing.name + ' — keeping existing ' + existing.score);
+              }
+            } else {
+              // New player — add entry using the name as typed
+              scores.push({ name: rawName, score, streak });
+              console.log('New player: ' + rawName + ' (' + score + ' pts)');
+            }
+
+            // Sort by score desc, then streak desc as tiebreaker
+            scores.sort((a, b) => b.score - a.score || (b.streak || 0) - (a.streak || 0));
+
             fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
-            console.log('Updated scores:', JSON.stringify(scores));
+            console.log('Final scores:', JSON.stringify(scores, null, 2));
           "
         env:
           PLAYER_NAME:   ${{ github.event.client_payload.name }}
@@ -49,36 +73,48 @@ jobs:
           git config user.name  "Quiz Bot"
           git config user.email "quiz-bot@users.noreply.github.com"
           git add scores.json
-          git diff --staged --quiet && echo "No changes" && exit 0
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
           git commit -m "Score: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
-          # Pull with rebase to handle concurrent score saves
           git pull --rebase origin main
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Merge if rebase conflict on scores.json
+      - name: Retry on push conflict
         if: failure()
         run: |
           git config user.name  "Quiz Bot"
           git config user.email "quiz-bot@users.noreply.github.com"
-          # Re-fetch latest, re-merge this score on top
           git fetch origin main
           git checkout origin/main -- scores.json
           node -e "
             const fs = require('fs');
             let scores = [];
             try { scores = JSON.parse(fs.readFileSync('scores.json', 'utf8')); } catch(e) {}
-            const name   = process.env.PLAYER_NAME;
-            const score  = parseInt(process.env.PLAYER_SCORE);
-            const streak = parseInt(process.env.PLAYER_STREAK);
-            const existing = scores.find(s => s.name === name);
-            if (existing) {
-              if (score > existing.score) { existing.score = score; existing.streak = streak; }
+
+            const rawName = process.env.PLAYER_NAME.trim();
+            const score   = parseInt(process.env.PLAYER_SCORE);
+            const streak  = parseInt(process.env.PLAYER_STREAK);
+
+            if (!rawName || isNaN(score) || score <= 0) process.exit(0);
+
+            const existingIdx = scores.findIndex(
+              s => s.name.trim().toLowerCase() === rawName.toLowerCase()
+            );
+
+            if (existingIdx !== -1) {
+              const existing = scores[existingIdx];
+              if (score > existing.score) {
+                existing.score  = score;
+                existing.streak = Math.max(existing.streak || 0, streak);
+              } else {
+                existing.streak = Math.max(existing.streak || 0, streak);
+              }
             } else {
-              scores.push({ name, score, streak });
+              scores.push({ name: rawName, score, streak });
             }
-            scores.sort((a, b) => b.score - a.score);
+
+            scores.sort((a, b) => b.score - a.score || (b.streak || 0) - (a.streak || 0));
             fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
           "
           git add scores.json
