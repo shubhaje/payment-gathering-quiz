@@ -125,7 +125,7 @@ function render(scores){
     document.getElementById('lbCount').textContent='';
   }
   var list=document.getElementById('lbList');
-  if(!n){
+  if(!total_n){
     list.innerHTML='<div class="lb-empty"><span class="lb-empty-icon">🧪</span>No scores yet!<br>Be the first to complete the quiz.</div>';
     return;
   }
