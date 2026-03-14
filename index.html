@@ -369,7 +369,7 @@ function showGameOver(){
   document.getElementById('progressFill').style.width='100%';celebrate();
   var timeTaken=Math.round((Date.now()-startTime)/1000);
   saveScore(currentName,score,streak,timeTaken,function(){setTimeout(loadLeaderboard,35000);});
-}
+} 
 
 function restartGame(){cur=0;score=0;streak=0;answered=false;sel=null;currentName='';session=pickQuestions();updateStats();loadQuestion(0);startTime=Date.now();}
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
