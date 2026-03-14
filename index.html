@@ -323,15 +323,8 @@ function submitAnswer(){
     fb.className='feedback-box correct-fb show';
     celebrate();
     var st=document.getElementById('saveStatus');
-    st.textContent='💾 Saving score...';st.className='save-status saving';
-    saveScore(currentName,score,streak,function(err){
-      if(err){st.textContent='\u26a0\ufe0f Save failed: '+err.message;st.className='save-status error';}
-      else{
-        st.textContent='\u2705 Score submitted! Leaderboard updates in ~30s';
-        st.className='save-status saved';
-        setTimeout(loadLeaderboard,35000);
-      }
-    });
+    st.textContent='\uD83D\uDCCA Running score: '+score+' pts \u2014 final score saved at end of game';
+    st.className='save-status saved';
   } else {
     streak=0;fb.textContent='\u274C '+q.why;fb.className='feedback-box wrong-fb show';
   }
