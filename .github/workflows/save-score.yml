@@ -39,14 +39,20 @@ jobs:
             if (existingIdx !== -1) {
               const existing = scores[existingIdx];
               if (score > existing.score) {
-                // New score is better — update
+                // New score is better — update everything
                 console.log('Updated: ' + existing.name + ' ' + existing.score + ' -> ' + score);
                 existing.score  = score;
                 existing.streak = Math.max(existing.streak || 0, streak);
+                if (time) existing.time = time;
               } else if (score === existing.score) {
-                // Same score — keep best streak
-                console.log('Same score for ' + existing.name + ' — keeping best streak');
+                // Same score — update if faster time
                 existing.streak = Math.max(existing.streak || 0, streak);
+                if (time && (!existing.time || time < existing.time)) {
+                  console.log('Same score, faster time: ' + existing.time + ' -> ' + time);
+                  existing.time = time;
+                } else {
+                  console.log('Same score for ' + existing.name + ' — no improvement');
+                }
               } else {
                 // Lower score — keep existing, do nothing
                 console.log('Lower score for ' + existing.name + ' — keeping existing ' + existing.score);
@@ -101,6 +107,7 @@ jobs:
             const rawName = process.env.PLAYER_NAME.trim();
             const score   = parseInt(process.env.PLAYER_SCORE);
             const streak  = parseInt(process.env.PLAYER_STREAK);
+            const time    = parseInt(process.env.PLAYER_TIME) || null;
 
             if (!rawName || isNaN(score) || score <= 0) process.exit(0);
 
@@ -113,8 +120,10 @@ jobs:
               if (score > existing.score) {
                 existing.score  = score;
                 existing.streak = Math.max(existing.streak || 0, streak);
-              } else {
+                if (time) existing.time = time;
+              } else if (score === existing.score) {
                 existing.streak = Math.max(existing.streak || 0, streak);
+                if (time && (!existing.time || time < existing.time)) existing.time = time;
               }
             } else {
               scores.push({ name: rawName, score, streak, time });
