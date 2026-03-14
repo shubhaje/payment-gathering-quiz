@@ -311,38 +311,50 @@ function submitAnswer(){
   if(answered)return;
   if(sel===null){showToast('Pick an option first!');return;}
   currentName=document.getElementById('playerName').value.trim();
-  if(!currentName){showToast('Please enter your name first!');answered=false;document.getElementById('submitBtn').disabled=false;return;}
-  // Check if name already exists — block and ask to use different name
-  var SCORES_API2='https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
+  if(!currentName){
+    showToast('Please enter your name first!');
+    return;
+  }
+  // Lock everything while checking name
+  answered=true;
+  document.getElementById('submitBtn').disabled=true;
   var st2=document.getElementById('saveStatus');
-  st2.textContent='🔍 Checking name...';
+  st2.textContent='Checking name...';
   st2.className='save-status saving';
-  fetch(SCORES_API2+'?t='+Date.now(),{headers:{'Accept':'application/vnd.github.v3.raw','Authorization':'token '+DISPATCH_TOKEN}})
+  var SCORES_API2='https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
+  fetch(SCORES_API2+'?t='+Date.now(),{
+    headers:{'Accept':'application/vnd.github.v3.raw','Authorization':'token '+DISPATCH_TOKEN}
+  })
   .then(function(r){return r.ok?r.json():[];})
   .then(function(existing){
-    var clash=existing.find(function(e){return e.name.trim().toLowerCase()===currentName.toLowerCase();});
+    var clash=existing.find(function(e){
+      return e.name.trim().toLowerCase()===currentName.toLowerCase();
+    });
     if(clash){
-      // Name taken — reset and ask for different name
+      // Name taken — FULLY reset, block answer processing
       answered=false;
       document.getElementById('submitBtn').disabled=false;
+      sel=null;
       var btns2=document.querySelectorAll('.option-btn');
-      for(var i=0;i<btns2.length;i++){btns2[i].classList.remove('correct','wrong');}
+      for(var i=0;i<btns2.length;i++){btns2[i].classList.remove('selected','correct','wrong');}
       st2.textContent='⚠️ Name "'+currentName+'" is already taken! Please use a different name e.g. "'+currentName+'2"';
       st2.className='save-status error';
       document.getElementById('playerName').value='';
       document.getElementById('playerName').focus();
       return;
     }
-    // Name is unique — proceed with answer processing
+    // Name unique — clear status and process answer
+    st2.textContent='';
+    st2.className='save-status';
     processAnswer();
   })
   .catch(function(){
     // If check fails, proceed anyway
+    st2.textContent='';
     processAnswer();
   });
-  answered=true;document.getElementById('submitBtn').disabled=true;
-  processAnswer();
 }
+
 
 function processAnswer(){
   var q=session[cur],correct=(sel===q.ans);
