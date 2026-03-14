@@ -96,12 +96,12 @@ header{text-align:center;padding:36px 0 32px}
 <script>
 // Reads directly from raw.githubusercontent.com — no token needed for public repos
 var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
-// Read via GitHub API — always fresh, no token needed for public repos
+var READ_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__'; // injected by deploy workflow
 var SCORES_API = 'https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
 
 function fetchAndRender(){
   fetch(SCORES_API + '?t=' + Date.now(), {
-    headers: { 'Accept': 'application/vnd.github.v3.raw' }
+    headers: { 'Accept': 'application/vnd.github.v3.raw', 'Authorization': 'token ' + READ_TOKEN }
   })
   .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
   .then(function(scores){

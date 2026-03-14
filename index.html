@@ -235,7 +235,7 @@ function saveScore(name,finalScore,finalStreak,timeTaken,cb){
 function loadLeaderboard(){
   var SCORES_API='https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
   fetch(SCORES_API+'?t='+Date.now(),{
-    headers:{'Accept':'application/vnd.github.v3.raw'}
+    headers:{'Accept':'application/vnd.github.v3.raw','Authorization':'token '+DISPATCH_TOKEN}
   })
   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
   .then(function(scores){

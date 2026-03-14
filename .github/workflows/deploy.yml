@@ -20,11 +20,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Inject token into index.html
+      - name: Inject token into HTML files
         run: |
-          # Replace the placeholder with the real secret — never stored in any file
+          # Replace placeholder in both files — token never stored in repo
           sed -i "s|__DISPATCH_TOKEN_PLACEHOLDER__|${{ secrets.DISPATCH_TOKEN }}|g" index.html
-          echo "Token injected successfully"
+          sed -i "s|__DISPATCH_TOKEN_PLACEHOLDER__|${{ secrets.DISPATCH_TOKEN }}|g" leaderboard.html
+          echo "Tokens injected successfully"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
