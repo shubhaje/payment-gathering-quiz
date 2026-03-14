@@ -98,6 +98,7 @@ header{text-align:center;padding:36px 0 32px}
 var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 var READ_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__'; // injected by deploy workflow
 var SCORES_API = 'https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
+ 
 
 function fetchAndRender(){
   fetch(SCORES_API + '?t=' + Date.now(), {
