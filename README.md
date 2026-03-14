@@ -1,4 +1,4 @@
-# 🏦 Payment Testing Challenge
+# 🏦 Testing Challenge
 
 > A live, competitive quiz game for payment testing professionals — test your knowledge, beat the clock, and top the leaderboard!
 
@@ -13,7 +13,7 @@
 
 ## 🎯 About the Quiz
 
-The **Payment Testing Challenge** is a live, browser-based quiz covering software testing concepts applied to real-world payment scenarios. Players answer 6 randomly selected questions from a pool of 22 and compete for the top 5 spots on the live leaderboard.
+The **Testing Challenge** is a live, browser-based quiz covering software testing concepts applied to real-world payment scenarios. Players answer 6 randomly selected questions from a pool of 22 and compete for the top 5 spots on the live leaderboard.
 
 ### Topics covered
 CPP · SEPA Instant · HVP · PPR2 · BOX · PDS · SEK Batch · Target DKK · Testing · Automation · AI
@@ -35,7 +35,7 @@ CPP · SEPA Instant · HVP · PPR2 · BOX · PDS · SEK Batch · Target DKK · T
 ### Ranking
 Players are ranked by **score (highest first)**, then by **time (fastest first)** as tiebreaker.
 
----c
+---
 
 ## 📱 How to use at an event
 
