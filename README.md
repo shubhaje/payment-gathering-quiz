@@ -35,7 +35,7 @@ CPP · SEPA Instant · HVP · PPR2 · BOX · PDS · SEK Batch · Target DKK · T
 ### Ranking
 Players are ranked by **score (highest first)**, then by **time (fastest first)** as tiebreaker.
 
----
+---c
 
 ## 📱 How to use at an event
 
