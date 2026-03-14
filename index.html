@@ -233,13 +233,10 @@ function saveScore(name,finalScore,finalStreak,cb){
 }
 
 function loadLeaderboard(){
-  // Use GitHub API to avoid raw.githubusercontent.com caching
-  fetch('https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json',{
-    headers:{'Accept':'application/vnd.github.v3+json','Cache-Control':'no-cache'}
-  })
+  var CDN_URL='https://cdn.jsdelivr.net/gh/shubhaje/payment-gathering-quiz@main/scores.json';
+  fetch(CDN_URL+'?t='+Date.now()+'&r='+Math.random())
   .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();})
-  .then(function(data){
-    var scores=JSON.parse(atob(data.content.replace(/\n/g,'')));
+  .then(function(scores){
     document.getElementById('statPlayers').textContent=scores.length||'0';
     renderLB(scores,currentName);
   })
