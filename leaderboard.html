@@ -100,11 +100,7 @@ var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 var CDN_URL  = 'https://cdn.jsdelivr.net/gh/shubhaje/payment-gathering-quiz@main/scores.json';
 
 function fetchAndRender(){
-  // Force bypass all caches including browser cache
-  fetch(CDN_URL + '?t=' + Date.now() + '&r=' + Math.random(), {
-    cache: 'no-store',
-    headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache, no-store' }
-  })
+  fetch(CDN_URL + '?t=' + Date.now() + '&r=' + Math.random())
   .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
   .then(function(scores){
     render(scores);
