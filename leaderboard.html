@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Live Leaderboard 🏆 Test This!</title>
+<title>Live Leaderboard 🏆 Payment Testing Challenge</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0f;--card:#1a1a2e;--border:#2a2a4a;--accent:#00ff88;--accent2:#ff3366;--accent3:#ffcc00;--accent4:#00aaff;--text:#e8e8ff;--muted:#6666aa}
@@ -60,7 +60,7 @@ header{text-align:center;padding:36px 0 32px}
 <div class="container">
   <header>
     <div class="page-title">🏆 LIVE<br>LEADERBOARD</div>
-    <div class="page-sub">Test This! · Payment Testing Quiz</div>
+    <div class="page-sub">Payment Testing Challenge · Live Competition</div>
     <div class="live-badge"><div class="live-dot"></div>LIVE · AUTO-REFRESHES EVERY 15s</div>
     <div class="refresh-info" id="lastRefresh">Fetching scores...</div>
   </header>
@@ -98,7 +98,6 @@ header{text-align:center;padding:36px 0 32px}
 var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 var READ_TOKEN = '__DISPATCH_TOKEN_PLACEHOLDER__'; // injected by deploy workflow
 var SCORES_API = 'https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
- 
 
 function fetchAndRender(){
   fetch(SCORES_API + '?t=' + Date.now(), {
