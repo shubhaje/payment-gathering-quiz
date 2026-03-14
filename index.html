@@ -188,28 +188,97 @@ var RAW_URL        = 'https://raw.githubusercontent.com/'+GITHUB_OWNER+'/'+GITHU
 var DISPATCH_URL   = 'https://api.github.com/repos/'+GITHUB_OWNER+'/'+GITHUB_REPO+'/dispatches';
 
 var ALL_QUESTIONS = [
-  {phase:"SMOKE TEST",pts:100,q:"What is a Smoke Test?",sc:null,opts:["A full test of every feature and edge case","A quick check of the most critical features to confirm a build is stable enough for deeper testing","A test that checks only the visual design","A security scan to find vulnerabilities"],ans:1,why:"A smoke test is fast and shallow — is this build alive? If core features fail, there is no point running anything deeper."},
-  {phase:"REGRESSION TEST",pts:100,q:"What is a Regression Test?",sc:null,opts:["Testing only the new feature just added","Re-running tests on existing features to make sure a new change did not break something already working","Testing the application from scratch","A test that only runs before go-live"],ans:1,why:"Regression testing protects what already works. Every code change can accidentally break existing functionality."},
-  {phase:"SANITY TEST",pts:100,q:"What is a Sanity Test?",sc:null,opts:["A broad check across all features","A focused, narrow check on one specific area or fix to confirm it works","A test that checks the app makes logical sense to users","A full end-to-end test run after every deployment"],ans:1,why:"A sanity test is targeted — go straight to the specific scenario and confirm it now works. Narrow and fast."},
-  {phase:"INTEGRATION TEST",pts:100,q:"What is an Integration Test?",sc:null,opts:["Testing each module completely in isolation","Testing how two or more components or systems work together when connected","A test performed by business users","A performance test for user capacity"],ans:1,why:"Integration tests check the joins between systems. Two modules passing their own tests doesn't mean they work correctly together."},
-  {phase:"UAT",pts:100,q:"What is User Acceptance Testing (UAT)?",sc:null,opts:["Automated tests simulating thousands of real users","Testing done by QA testers pretending to be end users","Testing performed by real business users to confirm the software meets actual needs before go-live","A final visual check before launch"],ans:2,why:"UAT is the business sign-off test. Real users validate it meets real-world needs before any go-live."},
-  {phase:"LOAD TEST",pts:100,q:"What is a Load Test?",sc:null,opts:["Testing with a single user to check basic functionality","Simulating expected real-world user volumes to check the system performs acceptably","Testing how the system behaves beyond maximum capacity until it breaks","Measuring how long each page takes to load for one user"],ans:1,why:"Load testing simulates realistic traffic volumes — checks performance at expected load without slowing down or failing."},
-  {phase:"STRESS TEST",pts:100,q:"What is a Stress Test?",sc:null,opts:["Testing at normal expected traffic levels","A test to check visual layout on small screens","Deliberately pushing the system beyond expected maximum capacity to find its breaking point","Testing only the slowest features"],ans:2,why:"Stress testing asks: how does the system fail? It finds the breaking point — does it crash, or fail gracefully?"},
-  {phase:"EXPLORATORY TEST",pts:100,q:"What is Exploratory Testing?",sc:null,opts:["Running a fixed list of pre-written test cases","Unscripted, curiosity-driven testing where the tester freely investigates using experience and intuition","Automated tests that explore all code paths","Testing only features most likely to have bugs"],ans:1,why:"Exploratory testing finds the bugs nobody thought to write a test case for — the ones real users stumble on."},
-  {phase:"PERFORMANCE TEST",pts:150,q:"What is the difference between a Load Test and a Stress Test?",sc:null,opts:["They are identical — just different names","Load test checks performance at expected volumes. Stress test pushes beyond limits to find the breaking point.","Load test is manual, stress test is automated","Stress test checks one feature, load test checks the whole app"],ans:1,why:"Load test = can you handle expected traffic? Stress test = what happens when you exceed it?"},
-  {phase:"SECURITY TEST",pts:150,q:"What is Security Testing?",sc:null,opts:["Testing the application loads quickly","Testing that checks the app protects data, enforces authorisation, and resists attacks like injection and unauthorised access","A test checking only password complexity","Testing done by external auditors only"],ans:1,why:"Security testing covers data protection, authorisation, and resistance to attacks. Non-negotiable for payment systems."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"A new payment build has arrived. The Pay button has not been tested. You have 10 minutes. Which test do you run?",sc:"New payment build — untested\nFull regression suite = 3 hours\nTime available = 10 minutes",opts:["Regression test — run all 200 payment test cases","Smoke test — confirm the core payment journey works before going deeper","UAT — hand it to the finance team","Exploratory test — click freely around"],ans:1,why:"Smoke test! If the Pay button is broken, running 200 more tests is pointless. Smoke first."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"A developer says: 'I fixed the bug where Amex cards were declined.' What is the FIRST test you run?",sc:null,opts:["Regression test — rerun all payment tests","Smoke test — quick check across the whole payment page","Sanity test — go directly to Amex payment and confirm it now succeeds","UAT — ask finance to verify"],ans:2,why:"Sanity test! Go straight to Amex payments and confirm the specific fix works. Then run regression."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"Apple Pay has been added. Visa, Mastercard, and PayPal worked before. Which test confirms they still work?",sc:"New: Apple Pay added\nVisa, Mastercard, PayPal: unchanged",opts:["Smoke test — confirm Apple Pay button appears","Regression test — rerun tests on existing payment methods to confirm none were broken","UAT — ask finance to confirm Apple Pay meets requirements","Integration test — check Apple Pay connects to gateway"],ans:1,why:"Regression test! Adding a new payment method touches shared gateway code — existing methods may be affected."},
-  {phase:"WHICH TEST? 💳",pts:100,q:"The payment module and fraud detection each pass all their own tests. But valid Visa payments are being blocked. Which test?",sc:"Payment module: All passed\nFraud detection: All passed\nResult: Valid Visa payments declined",opts:["Regression test","Smoke test","Integration test — test how the payment module and fraud detection interact","UAT"],ans:2,why:"Integration test! Two systems passing their own tests doesn't mean they work correctly together."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"A payment platform expects 50x normal volume during Black Friday. Tested capacity is unknown. Which test is essential?",sc:"Normal: 10,000 transactions/day\nBlack Friday: 500,000/day\nTested capacity: unknown",opts:["Smoke test","Regression test","Load test — simulate high volumes to find capacity limits before real customers hit them","UAT"],ans:2,why:"Load test! Find the slowdowns and failure points before Black Friday, not during it."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"You need to know what happens when the payment platform is pushed far beyond maximum capacity. Which test?",sc:"Normal: 50,000 transactions/hour\nTarget: find exact breaking point",opts:["Load test — simulate normal expected volumes","Regression test","Stress test — push far beyond capacity to find exactly where and how it breaks","Sanity test"],ans:2,why:"Stress test! Does it crash and lose transactions? Reject gracefully? Know this before a real overload."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"All tests passed. A tester spends 30 minutes freely exploring checkout — two discount codes, virtual card, two tabs. What is this?",sc:null,opts:["Regression testing","Sanity testing","Exploratory testing — unscripted investigation to find bugs no test case imagined","Smoke testing"],ans:2,why:"Exploratory testing! Real customers do unexpected things. This finds the most impactful bugs."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"Payment works on desktop but the Pay Now button is cut off on budget Android phones. Which testing was missed?",sc:"Desktop: All passed\nMobile: Pay Now missing on screens under 400px",opts:["Regression testing","Integration testing","Cross-device and mobile compatibility testing","UAT"],ans:2,why:"Mobile compatibility testing! Customers pay on the devices they own — budget Androids, older iPhones."},
-  {phase:"WHICH TEST? 💳",pts:150,q:"A tester changes their customer ID in the payment URL and views another customer's transaction history. Which test must be added?",sc:"URL: /account/12345/payments → /account/12346/payments\nResult: Another customer's data visible",opts:["Performance test","Regression test","Security test — verify users cannot access payment data belonging to other customers","UAT"],ans:2,why:"Security test! Accessing another customer's data by changing a URL is a critical vulnerability."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"3G customers report their payment spins forever with no confirmation. Which test was missing?",sc:"WiFi: Payment completes in 1s\n3G: Times out — blank screen, no message\nRisk: customer may pay again",opts:["Regression test","UAT","Network condition testing — payment flow never tested on slow or unstable connections","Smoke test"],ans:2,why:"Network condition testing! Payment flows must handle network failures gracefully with clear messages."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"Finance and ops need to confirm the reconciliation system matches settlement requirements before go-live. Which test?",sc:"Dev: Done · QA: Signed off\nFinance reviewed: No · Ops confirmed: No",opts:["Regression test","Integration test","UAT — real finance and ops users validate the system meets their actual reconciliation needs","Exploratory test"],ans:2,why:"UAT! Finance must sign off that totals match, settlement files are accurate, and refund records are correct."},
-  {phase:"WHICH TEST? 💳",pts:200,q:"A payment team deploys 20 times/day and needs feedback within 10 minutes of each deployment. What is the right approach?",sc:"Deployments/day: 20\nFull regression: 4 hours\nRequired feedback: under 10 mins",opts:["Run full 4-hour regression after every deployment","Run no automated tests","Run fast automated smoke and sanity on every deployment, full regression nightly","Run UAT after every deployment"],ans:2,why:"Tiered automation! Fast smoke/sanity after every deploy, full regression nightly. Fast feedback without blocking the team."}
+  {phase:"SEK BATCH 🇸🇪",pts:100,q:"Which currency is permitted for SEK Batch transactions?",sc:null,
+   opts:["EUR and SEK","Only SEK","SEK and DKK","Any Nordic currency"],ans:1,
+   why:"SEK Batch supports Swedish krona settlements exclusively. All transactions must be denominated in SEK — no other currency is accepted through this clearing channel."},
+
+  {phase:"QA FUNDAMENTALS 🧪",pts:100,q:"During testing, are both happy and unhappy flows expected to be validated?",sc:null,
+   opts:["No — only happy paths matter","Only unhappy paths to find bugs","Yes — both happy and unhappy flows must be tested","Only the flows specified in the requirements"],ans:2,
+   why:"Robust QA validates both expected (happy) and failure/edge (unhappy) paths to prevent escaped defects. Testing only happy paths leaves critical failure scenarios unverified."},
+
+  {phase:"SETTLEMENT 💳",pts:100,q:"If payments were settled in an active open account, could a return be requested by other banks?",sc:null,
+   opts:["No — once settled, returns are not possible","Yes — manual returns can be initiated even when the account remains active","Only within 24 hours of settlement","Only if the originating bank requests it"],ans:1,
+   why:"Manual returns can be initiated even when the originating settlement account remains active. The account status does not block the return process — returns are driven by business rules, not account state."},
+
+  {phase:"SETTLEMENT 💳",pts:100,q:"If a transaction is received in SEK but the account is in EUR, what happens?",sc:null,
+   opts:["The transaction is rejected immediately","The transaction is held pending manual review","The amount will be exchanged and the customer's account will be credited in EUR","The transaction is returned to the sender"],ans:2,
+   why:"The bank performs FX conversion using applicable rates, then credits the EUR account. This is standard currency conversion processing — the system does not reject mismatched currency transactions."},
+
+  {phase:"QA FUNDAMENTALS 🧪",pts:100,q:"Why does leadership secretly love the QA team?",sc:null,
+   opts:["Because every bug caught early saves money, time, and late-night war rooms","Because testers bring snacks","Because testers make bugs sound dramatic","Because they enjoy long defect meetings"],ans:0,
+   why:"Early defect detection reduces rework cost, mitigates production incidents, and saves significant time and money. Finding a bug in testing costs a fraction of fixing it in production."},
+
+  {phase:"AUTOMATION 🤖",pts:100,q:"What value does automation provide beyond faster execution?",sc:null,
+   opts:["It replaces all testers","It makes reports look pretty","It reduces the need for developers","It offers repeatability, wider coverage, and early warnings in CI/CD"],ans:3,
+   why:"Automation enables consistent regression, scalable coverage, and quick feedback in CI/CD pipelines. The real value is not speed alone — it is reliability, repeatability, and shift-left quality assurance."},
+
+  {phase:"QA FUNDAMENTALS 🧪",pts:150,q:"Why do senior developers still need QA partnership?",sc:null,
+   opts:["QA writes better code","Testers enjoy breaking things","Developers don't like testing","Developers validate functionality; QA validates resilience and risk"],ans:3,
+   why:"Developer tests verify correctness; QA adds systemic risk checks — resilience, negative paths, usability, and data quality. These are complementary disciplines, not competing ones."},
+
+  {phase:"QA FUNDAMENTALS 🧪",pts:150,q:"Which KPI is directly improved by strong QA practices?",sc:null,
+   opts:["Office chair quality","Number of emails sent","Developer happiness","Release stability, MTTR, customer satisfaction, and defect leakage"],ans:3,
+   why:"Effective QA lowers defect leakage and MTTR (Mean Time To Recover), and improves release quality and customer satisfaction — all measurable business KPIs directly tied to quality practices."},
+
+  {phase:"RIX 🏦",pts:150,q:"A SEK payment going through RIX lists a DKK settlement account. The system does not complain. Can this work?",sc:"ClrSysRef: RIX\nIntrBkSttlmAmt Ccy=DKK: 150000",
+   opts:["Yes — RIX accepts multiple currencies","Yes — DKK and SEK are both Nordic currencies","No — RIX settles SEK only; a DKK settlement account is a business-rule violation","Only if the amount is below a threshold"],ans:2,
+   why:"RIX settles SEK only. Using a DKK settlement account is a business-rule violation — a hidden validation gap. The schema may not catch it but business rules enforce SEK-only settlement for RIX."},
+
+  {phase:"ISO 20022 📋",pts:150,q:"Which clearing system is used when a European bank sends USD via FEDWIRE to a US FED participant?",sc:"Scenario: European bank \u2192 USD \u2192 FEDWIRE \u2192 US FED participant",
+   opts:["FED","FDX","SWIFT","None of the above"],ans:1,
+   why:"FDX is used for foreign participant access into FEDWIRE flows. FDX acts as the bridge that allows non-US participants to access the FEDWIRE system for USD settlements."},
+
+  {phase:"RIX 🏦",pts:150,q:"Why does this RIX message fail business rules although the schema is correct?",sc:"<ClrSysRef>RIX</ClrSysRef>\n<IntrBkSttlmAmt Ccy='EUR'>34000</IntrBkSttlmAmt>",
+   opts:["It allows EUR and SEK","Amount not valid","RIX settles SEK only — EUR currency violates business rules","None of the above"],ans:2,
+   why:"XML schema validates structure, but business rules enforce currency = SEK for RIX. A message can be schema-valid but still fail business rule validation — this is a critical distinction in payment testing."},
+
+  {phase:"ISO 20022 📋",pts:150,q:"Cross-border EUR payment (Norway → Germany) without a direct relationship. Which option is the WRONG answer?",sc:"Scenario: Norway bank \u2192 EUR \u2192 Germany bank\nNo direct correspondent relationship",
+   opts:["Pacs.008 announcement","Pacs.008 cover","Pacs.008 serial","None of the above"],ans:2,
+   why:"When no direct correspondent exists, the cover method is used, not serial. Serial requires a direct chain of correspondent relationships. Cover uses a separate payment instruction to settle funds."},
+
+  {phase:"VOSTRO/NOSTRO 💱",pts:150,q:"What is a VOSTRO account?",sc:null,
+   opts:["Their money in our books","Our money in their books","FX settlement account","Debt account"],ans:0,
+   why:"Vostro means 'your account with us.' Nostro means 'our account with you.' A VOSTRO account is held by a foreign bank at a domestic bank — their money, in our books."},
+
+  {phase:"PDS 📊",pts:200,q:"Which category dumps the most data into the database?",sc:null,
+   opts:["Dates","Transaction information","Remittance information","Address"],ans:2,
+   why:"Remittance fields often include long, unstructured text and rich references. Remittance information carries free-text narrative data which is significantly larger in volume than structured fields like dates or addresses."},
+
+  {phase:"PDS 📊",pts:200,q:"If PDS does not receive FTM payloads from FTMCPP and IBIS files from IBIS, what is the impact on PDS?",sc:"FTM payloads: Not received\nIBIS files: Not received\nSystem: PDS",
+   opts:["Who cares","CAMT reports get generated with no data","Impact on CAMT (C53, C54C, C54D) report generation","PDS shuts down completely"],ans:2,
+   why:"Missing upstream data prevents correct CAMT production. Without FTM payloads and IBIS files, PDS cannot generate accurate C53, C54C, and C54D reports — impacting downstream reconciliation and reporting."},
+
+  {phase:"ISO 20022 📋",pts:200,q:"ISO20022 C54D (Debit) report is generated by which value chain?",sc:null,
+   opts:["811","FTMCPP","PDS","PAS","MHub","039","821"],ans:2,
+   why:"PDS is responsible for generating the C54D debit reports. PDS sits at the end of the payment data services value chain and produces the ISO 20022 CAMT.054 debit notification reports."},
+
+  {phase:"QA FUNDAMENTALS 🧪",pts:200,q:"If a tester misses a bug and nobody notices it... what is it officially called?",sc:null,
+   opts:['A "feature"','A "surprise mechanic"','"Works on my machine" certification',"All of the above"],ans:3,
+   why:"Light-hearted QA jargon — various euphemisms for an unnoticed defect. In reality, escaped defects represent quality failures. The humour highlights the importance of thorough test coverage so nothing slips through unnoticed."},
+
+  {phase:"HVP 🏦",pts:100,q:"What does HVP stand for in the context of payment systems?",sc:null,
+   opts:["High Volume Processing","High Value Payment","Hybrid Verification Protocol","Hosted Vault Payment"],ans:1,
+   why:"HVP stands for High Value Payment. These are typically large-value, time-critical interbank payments processed through RTGS (Real-Time Gross Settlement) systems like RIX, requiring strict settlement finality."},
+
+  {phase:"SEPA INSTANT ⚡",pts:100,q:"What is the maximum transaction amount for a SEPA Instant Credit Transfer?",sc:null,
+   opts:["€10,000","€25,000","€100,000","No limit"],ans:2,
+   why:"SEPA Instant Credit Transfers currently support a maximum of €100,000 per transaction. This limit applies across all participating banks and is enforced at the scheme level."},
+
+  {phase:"CPP 💳",pts:150,q:"In CPP, what does the pre-validation step primarily check before a payment is submitted?",sc:null,
+   opts:["That the payment amount is profitable","That mandatory fields are present, format is correct, and business rules are met","That the recipient has an active account","That the payment channel is available"],ans:1,
+   why:"CPP pre-validation ensures mandatory fields are present, format is correct, and business rules are satisfied before the payment enters the processing pipeline. This prevents costly failures downstream."},
+
+  {phase:"TARGET DKK 🇩🇰",pts:150,q:"What settlement currency is used for Target DKK transactions?",sc:null,
+   opts:["EUR","SEK","DKK","NOK"],ans:2,
+   why:"Target DKK processes and settles transactions in Danish Krone (DKK). This is a Danish RTGS system specifically designed for DKK-denominated high-value payments, separate from the EUR-based TARGET2 system."},
+
+  {phase:"BOX 📦",pts:200,q:"What is the primary purpose of BOX in the payment processing chain?",sc:null,
+   opts:["To archive old transactions","To act as an orchestration and routing layer that directs payment messages to the correct downstream systems","To generate ISO 20022 reports","To handle FX conversion"],ans:1,
+   why:"BOX acts as the central orchestration and routing hub in the payment chain. It receives payment messages and routes them to the appropriate downstream system based on payment type, currency, and routing rules."},
+
+  {phase:"AI 🧠",pts:200,q:"How can AI assist QA teams in payment system testing?",sc:null,
+   opts:["By replacing all manual testers","By automatically approving all test cases","By identifying anomalous patterns in transaction data, generating test scenarios, and predicting high-risk areas","By reducing the number of test cases needed"],ans:2,
+   why:"AI enhances QA by detecting anomalous patterns in large transaction datasets, auto-generating edge case scenarios, and predicting which areas of the system carry the highest regression risk — augmenting rather than replacing testers."}
 ];
 
 var ROUND_COUNT=6,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='',startTime=0;
