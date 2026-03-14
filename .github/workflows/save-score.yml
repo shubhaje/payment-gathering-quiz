@@ -80,6 +80,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Purge jsDelivr cache
+        run: |
+          curl -s "https://purge.jsdelivr.net/gh/shubhaje/payment-gathering-quiz@main/scores.json" || true
+          echo "Cache purged"
+
       - name: Retry on push conflict
         if: failure()
         run: |
