@@ -139,8 +139,8 @@ function render(scores){
   for(var i=0;i<scores.length;i++){
     var e=scores[i],cls=i<3?' '+ec[i]:'',rk=i<3?rc[i]:'rn',rd=i<3?medals[i]:('#'+( i+1)),delay=(i*0.05).toFixed(2);
     var sh=e.streak>1?'<div class="lb-streak">'+e.streak+'\uD83D\uDD25</div>':'';
-    var mins=e.time?Math.floor(e.time/60):null,secs=e.time?(e.time%60):null;
-    var timeStr=e.time?'<div class="lb-streak">\u23f1 '+(mins>0?mins+'m ':'')+secs+'s</div>':'';
+    var mins=e.time?Math.floor(e.time/60):0,secs=e.time?(e.time%60):0;
+    var timeStr=e.time?'<div class="lb-streak">\u23f1 '+(mins>0?mins+'m ':'')+secs+'s</div>':'<div class="lb-streak" style="color:var(--muted)">\u23f1 no time yet</div>';
     html+='<div class="lb-entry'+cls+'" style="animation-delay:'+delay+'s">';
     html+='<div class="rank-wrap '+rk+'">'+rd+'</div>';
     html+='<div class="lb-info"><div class="lb-name">'+esc(e.name)+'</div><div class="lb-meta">RANK #'+(i+1)+'</div></div>';
@@ -159,7 +159,6 @@ try{
     correctLevel:QRCode.CorrectLevel.M
   });
 }catch(e){}
-
 
 fetchAndRender();
 setInterval(fetchAndRender,15000);
