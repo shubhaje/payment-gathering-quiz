@@ -25,6 +25,149 @@ jobs:
             const rawName = process.env.PLAYER_NAME.trim();
             const score   = parseInt(process.env.PLAYER_SCORE);
             const streak  = parseInt(process.env.PLAYER_STREAK);
+            const time    = parseInt(process.env.PLAYER_TIME) || null;
+
+            if (!rawName || isNaN(score) || score <= 0) {
+              console.log('Invalid payload — skipping');
+              process.exit(0);
+            }
+
+            // Find existing entry using case-insensitive name match
+            const existingIdx = scores.findIndex(
+              s => s.name.trim().toLowerCase() === rawName.toLowerCase()
+            );
+
+            if (existingIdx !== -1) {
+              const existing = scores[existingIdx];
+              if (score > existing.score) {
+                // New score is better — update everything
+                console.log('Updated: ' + existing.name + ' ' + existing.score + ' -> ' + score);
+                existing.score  = score;
+                existing.streak = Math.max(existing.streak || 0, streak);
+                if (time) existing.time = time;
+              } else if (score === existing.score) {
+                // Same score — update if faster time
+                existing.streak = Math.max(existing.streak || 0, streak);
+                if (time && (!existing.time || time < existing.time)) {
+                  console.log('Same score, faster time: ' + existing.time + ' -> ' + time);
+                  existing.time = time;
+                } else {
+                  console.log('Same score for ' + existing.name + ' — no improvement');
+                }
+              } else {
+                // Lower score — keep existing, do nothing
+                console.log('Lower score for ' + existing.name + ' — keeping existing ' + existing.score);
+              }
+            } else {
+              // New player — add entry using the name as typed
+              scores.push({ name: rawName, score, streak, time });
+              console.log('New player: ' + rawName + ' (' + score + ' pts)');
+            }
+
+            // Sort by score desc, then streak desc as tiebreaker
+            scores.sort((a, b) => b.score - a.score || (a.time || 9999) - (b.time || 9999));
+
+            fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
+            console.log('Final scores:', JSON.stringify(scores, null, 2));
+          "
+        env:
+          PLAYER_NAME:   ${{ github.event.client_payload.name }}
+          PLAYER_SCORE:  ${{ github.event.client_payload.score }}
+          PLAYER_STREAK: ${{ github.event.client_payload.streak }}
+          PLAYER_TIME:   ${{ github.event.client_payload.time }}
+
+      - name: Commit updated scores.json
+        run: |
+          git config user.name  "Quiz Bot"
+          git config user.email "quiz-bot@users.noreply.github.com"
+          git add scores.json
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Score: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
+          git pull --rebase origin main
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Purge jsDelivr cache
+        run: |
+          curl -s "https://purge.jsdelivr.net/gh/shubhaje/payment-gathering-quiz@main/scores.json" || true
+          echo "Cache purged"
+
+      - name: Retry on push conflict
+        if: failure()
+        run: |
+          git config user.name  "Quiz Bot"
+          git config user.email "quiz-bot@users.noreply.github.com"
+          git fetch origin main
+          git checkout origin/main -- scores.json
+          node -e "
+            const fs = require('fs');
+            let scores = [];
+            try { scores = JSON.parse(fs.readFileSync('scores.json', 'utf8')); } catch(e) {}
+
+            const rawName = process.env.PLAYER_NAME.trim();
+            const score   = parseInt(process.env.PLAYER_SCORE);
+            const streak  = parseInt(process.env.PLAYER_STREAK);
+            const time    = parseInt(process.env.PLAYER_TIME) || null;
+
+            if (!rawName || isNaN(score) || score <= 0) process.exit(0);
+
+            const existingIdx = scores.findIndex(
+              s => s.name.trim().toLowerCase() === rawName.toLowerCase()
+            );
+
+            if (existingIdx !== -1) {
+              const existing = scores[existingIdx];
+              if (score > existing.score) {
+                existing.score  = score;
+                existing.streak = Math.max(existing.streak || 0, streak);
+                if (time) existing.time = time;
+              } else if (score === existing.score) {
+                existing.streak = Math.max(existing.streak || 0, streak);
+                if (time && (!existing.time || time < existing.time)) existing.time = time;
+              }
+            } else {
+              scores.push({ name: rawName, score, streak, time });
+            }
+
+            scores.sort((a, b) => b.score - a.score || (a.time || 9999) - (b.time || 9999));
+            fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
+          "
+          git add scores.json
+          git diff --staged --quiet || git commit -m "Score retry: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAYER_NAME:   ${{ github.event.client_payload.name }}
+          PLAYER_SCORE:  ${{ github.event.client_payload.score }}
+          PLAYER_STREAK: ${{ github.event.client_payload.streak }}name: Save Quiz Score
+
+on:
+  repository_dispatch:
+    types: [save-score]
+
+jobs:
+  save-score:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Update scores.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            let scores = [];
+            try { scores = JSON.parse(fs.readFileSync('scores.json', 'utf8')); } catch(e) {}
+
+            // Normalise: trim whitespace, lowercase for comparison
+            const rawName = process.env.PLAYER_NAME.trim();
+            const score   = parseInt(process.env.PLAYER_SCORE);
+            const streak  = parseInt(process.env.PLAYER_STREAK);
+            const time    = parseInt(process.env.PLAYER_TIME) || null;
 
             if (!rawName || isNaN(score) || score <= 0) {
               console.log('Invalid payload — skipping');

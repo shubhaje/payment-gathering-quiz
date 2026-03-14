@@ -141,9 +141,9 @@ header{text-align:center;padding:36px 0 24px}
         <div class="scenario-box" id="scenarioBox" style="display:none"></div>
         <div class="options-grid" id="optionsGrid"></div>
         <div class="player-section">
-          <label>Enter your name to save your score 🧪</label>
+          <label>Your name * (required to save score) 🧪</label>
           <div class="input-row">
-            <input type="text" class="name-input" id="playerName" placeholder="Your name..." maxlength="20">
+            <input type="text" class="name-input" id="playerName" placeholder="Your name (required)..." maxlength="20" required>
             <button class="submit-btn" id="submitBtn" onclick="submitAnswer()">SUBMIT</button>
           </div>
           <div class="save-status" id="saveStatus"></div>
@@ -310,7 +310,8 @@ function selectOption(idx,btn){
 function submitAnswer(){
   if(answered)return;
   if(sel===null){showToast('Pick an option first!');return;}
-  currentName=document.getElementById('playerName').value.trim()||'Anonymous';
+  currentName=document.getElementById('playerName').value.trim();
+  if(!currentName){showToast('Please enter your name first!');answered=false;document.getElementById('submitBtn').disabled=false;return;}
   answered=true;document.getElementById('submitBtn').disabled=true;
   var q=session[cur],correct=(sel===q.ans);
   var btns=document.querySelectorAll('.option-btn');
