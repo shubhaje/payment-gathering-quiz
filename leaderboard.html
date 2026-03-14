@@ -95,19 +95,26 @@ header{text-align:center;padding:36px 0 32px}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 // Reads directly from raw.githubusercontent.com — no token needed for public repos
-var RAW_URL  = 'https://raw.githubusercontent.com/shubhaje/payment-gathering-quiz/main/scores.json';
+var API_URL  = 'https://api.github.com/repos/shubhaje/payment-gathering-quiz/contents/scores.json';
 var QUIZ_URL = 'https://shubhaje.github.io/payment-gathering-quiz/';
 
 function fetchAndRender(){
-  fetch(RAW_URL+'?t='+Date.now())
-    .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-    .then(function(scores){
-      render(scores);
-      document.getElementById('lastRefresh').textContent='Last updated: '+new Date().toLocaleTimeString();
-    })
-    .catch(function(e){
-      document.getElementById('lastRefresh').textContent='Error: '+e.message+' — retrying...';
-    });
+  // Use GitHub API with no-cache headers — avoids raw.githubusercontent.com caching
+  fetch(API_URL, {
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'Cache-Control': 'no-cache'
+    }
+  })
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+  .then(function(data){
+    var scores = JSON.parse(atob(data.content.replace(/\n/g,'')));
+    render(scores);
+    document.getElementById('lastRefresh').textContent='Last updated: '+new Date().toLocaleTimeString();
+  })
+  .catch(function(e){
+    document.getElementById('lastRefresh').textContent='Error: '+e.message+' — retrying...';
+  });
 }
 
 function render(scores){
