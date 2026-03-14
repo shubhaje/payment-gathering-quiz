@@ -49,7 +49,43 @@ jobs:
           git config user.name  "Quiz Bot"
           git config user.email "quiz-bot@users.noreply.github.com"
           git add scores.json
-          git diff --staged --quiet || git commit -m "Score: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
+          git diff --staged --quiet && echo "No changes" && exit 0
+          git commit -m "Score: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
+          # Pull with rebase to handle concurrent score saves
+          git pull --rebase origin main
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge if rebase conflict on scores.json
+        if: failure()
+        run: |
+          git config user.name  "Quiz Bot"
+          git config user.email "quiz-bot@users.noreply.github.com"
+          # Re-fetch latest, re-merge this score on top
+          git fetch origin main
+          git checkout origin/main -- scores.json
+          node -e "
+            const fs = require('fs');
+            let scores = [];
+            try { scores = JSON.parse(fs.readFileSync('scores.json', 'utf8')); } catch(e) {}
+            const name   = process.env.PLAYER_NAME;
+            const score  = parseInt(process.env.PLAYER_SCORE);
+            const streak = parseInt(process.env.PLAYER_STREAK);
+            const existing = scores.find(s => s.name === name);
+            if (existing) {
+              if (score > existing.score) { existing.score = score; existing.streak = streak; }
+            } else {
+              scores.push({ name, score, streak });
+            }
+            scores.sort((a, b) => b.score - a.score);
+            fs.writeFileSync('scores.json', JSON.stringify(scores, null, 2));
+          "
+          git add scores.json
+          git diff --staged --quiet || git commit -m "Score retry: ${{ github.event.client_payload.name }} (${{ github.event.client_payload.score }} pts)"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PLAYER_NAME:   ${{ github.event.client_payload.name }}
+          PLAYER_SCORE:  ${{ github.event.client_payload.score }}
+          PLAYER_STREAK: ${{ github.event.client_payload.streak }}
