@@ -1,44 +1,9 @@
 [
+  
   {
-    "name": "PG",
-    "score": 3350,
-    "streak": 15,
-    "time": 258
-  },
-  {
-    "name": "Priyanka",
-    "score": 620,
-    "streak": 2,
-    "time": 104
-  },
-  {
-    "name": "Agnese R",
-    "score": 410,
-    "streak": 1,
-    "time": 110
-  },
-  {
-    "name": "Silvija",
-    "score": 410,
-    "streak": 1,
-    "time": 171
-  },
-  {
-    "name": "Karan Handu",
-    "score": 360,
-    "streak": 0,
-    "time": 352
-  },
-  {
-    "name": "Sagar",
+    "name": "Quiz Master",
     "score": 350,
     "streak": 0,
     "time": 132
-  },
-  {
-    "name": "Frode",
-    "score": 210,
-    "streak": 0,
-    "time": 212
   }
 ]
