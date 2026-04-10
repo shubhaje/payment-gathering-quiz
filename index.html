@@ -281,7 +281,7 @@ var ALL_QUESTIONS = [
    why:"AI enhances QA by detecting anomalous patterns in large transaction datasets, auto-generating edge case scenarios, and predicting which areas of the system carry the highest regression risk — augmenting rather than replacing testers."}
 ];
 
-var ROUND_COUNT=6,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='',startTime=0;
+var ROUND_COUNT=16,session=[],cur=0,score=0,streak=0,sel=null,answered=false,currentName='',startTime=0;
 
 function saveScore(name,finalScore,finalStreak,timeTaken,cb){
   fetch(DISPATCH_URL,{
@@ -330,7 +330,7 @@ function renderLB(scores,highlight){
 function pickQuestions(){
   var copy=ALL_QUESTIONS.slice();
   for(var i=copy.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=copy[i];copy[i]=copy[j];copy[j]=t;}
-  var pts=[100,100,150,150,200,200];
+  var pts=[100,100,100,100,100,150,150,150,150,150,150,200,200,200,200,200];
   return copy.slice(0,ROUND_COUNT).map(function(q,i){return Object.assign({},q,{round:i+1,points:pts[i]});});
 }
 
